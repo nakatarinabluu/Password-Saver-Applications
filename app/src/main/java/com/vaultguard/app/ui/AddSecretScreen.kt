@@ -29,18 +29,22 @@ fun AddSecretScreen(
     var isSaving by remember { mutableStateOf(false) }
 
     // React to state changes
+    val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(saveState) {
         saveState?.let { result ->
             isSaving = false
             if (result.isSuccess) {
                 onSaved()
             } else {
-                // Handle error (e.g. show snackbar)
+                result.exceptionOrNull()?.message?.let { msg ->
+                    snackbarHostState.showSnackbar("Error: $msg")
+                }
             }
         }
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.title_add_secret), color = Color.White) },
@@ -58,6 +62,7 @@ fun AddSecretScreen(
                 .fillMaxSize()
                 .background(Color.Black)
                 .padding(padding)
+
                 .padding(24.dp)
         ) {
             OutlinedTextField(
