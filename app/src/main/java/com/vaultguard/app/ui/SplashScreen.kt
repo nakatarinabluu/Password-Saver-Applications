@@ -19,17 +19,24 @@ import com.vaultguard.app.R
 import kotlinx.coroutines.delay
 
 @Composable
+
 fun SplashScreen(
     onSplashFinished: () -> Unit
 ) {
     var startAnimation by remember { mutableStateOf(false) }
+    
     val alphaAnim = animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0f,
         animationSpec = tween(durationMillis = 1000)
     )
+    
+    // Bouncy Scale Animation
     val scaleAnim = animateFloatAsState(
-        targetValue = if (startAnimation) 1f else 0.5f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+        targetValue = if (startAnimation) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = 0.4f, // High Bounce
+            stiffness = Spring.StiffnessLow
+        )
     )
 
     LaunchedEffect(key1 = true) {
@@ -41,26 +48,37 @@ fun SplashScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF102027)), // Deep Navy Background
+            .background(Color(0xFFF5F5F7)), // Swiss Minimal Light Gray
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Image(
-                painter = painterResource(id = R.mipmap.ic_launcher), // Use the App Icon
+                painter = painterResource(id = R.mipmap.ic_launcher), // App Icon
                 contentDescription = "Logo",
                 modifier = Modifier
-                    .size(150.dp)
+                    .size(120.dp)
                     .scale(scaleAnim.value)
                     .alpha(alphaAnim.value)
             )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "ZeroKeep",
-                color = Color.White,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.alpha(alphaAnim.value)
-            )
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Animated Text
+            androidx.compose.animation.AnimatedVisibility(
+                visible = startAnimation,
+                enter = androidx.compose.animation.slideInVertically(
+                    initialOffsetY = { 50 } // Slide up from bottom
+                ) + androidx.compose.animation.fadeIn(
+                    animationSpec = tween(1000)
+                )
+            ) {
+                Text(
+                    text = "ZeroKeep",
+                    color = Color.Black, // Dark Text for Light Theme
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp
+                )
+            }
         }
     }
 }

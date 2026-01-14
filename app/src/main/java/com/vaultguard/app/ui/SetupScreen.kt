@@ -14,18 +14,31 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 import androidx.compose.ui.res.stringResource
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import com.vaultguard.app.security.MnemonicUtils
 
 @Composable
 fun SetupScreen(onSetupComplete: (String) -> Unit) {
     var step by remember { mutableStateOf(SetupStep.WELCOME) }
 
+    // Handle System Back Press? (Optional, but UI Back button is requested)
+    
     when (step) {
         SetupStep.WELCOME -> WelcomeContent(
             onNewWallet = { step = SetupStep.CREATE },
             onRestoreWallet = { step = SetupStep.RESTORE }
         )
-        SetupStep.CREATE -> CreateWalletContent(onSetupComplete)
-        SetupStep.RESTORE -> RestoreWalletContent(onSetupComplete)
+        SetupStep.CREATE -> CreateWalletContent(
+            onSetupComplete = onSetupComplete,
+            onBack = { step = SetupStep.WELCOME }
+        )
+        SetupStep.RESTORE -> RestoreWalletContent(
+            onSetupComplete = onSetupComplete,
+            onBack = { step = SetupStep.WELCOME }
+        )
     }
 }
 
@@ -85,30 +98,33 @@ fun WelcomeContent(onNewWallet: () -> Unit, onRestoreWallet: () -> Unit) {
 }
 
 @Composable
-fun CreateWalletContent(onSetupComplete: (String) -> Unit) {
-    val mnemonic = remember {
-        listOf("witch", "collapse", "practice", "feed", "shame", "open", "despair", "creek", "road", "again", "ice", "least")
-    }
+fun CreateWalletContent(onSetupComplete: (String) -> Unit, onBack: () -> Unit) {
+    // START WITH RANDOM MNEMONIC
+    var mnemonic by remember { mutableStateOf(MnemonicUtils.generate()) }
+    
     SetupForm(
         title = stringResource(com.vaultguard.app.R.string.title_setup),
         instruction = "Write down these words. You will need them to recover your account.",
         mnemonic = mnemonic,
+        onRegenerateMnemonic = { mnemonic = MnemonicUtils.generate() },
         isRestore = false,
-        onSetupComplete = onSetupComplete
+        onSetupComplete = onSetupComplete,
+        onBack = onBack
     )
 }
 
 @Composable
-fun RestoreWalletContent(onSetupComplete: (String) -> Unit) {
-    var inputPhrase by remember { mutableStateOf("") }
+fun RestoreWalletContent(onSetupComplete: (String) -> Unit, onBack: () -> Unit) {
     // In a real app, we would validate these words against BIP39 list
     
     SetupForm(
         title = "Restore Vault",
         instruction = "Enter your 12-word recovery phrase to restore your access.",
         mnemonic = null, // No mnemonic to show, we input it
+        onRegenerateMnemonic = {},
         isRestore = true,
-        onSetupComplete = onSetupComplete
+        onSetupComplete = onSetupComplete,
+        onBack = onBack
     )
 }
 
@@ -117,8 +133,10 @@ fun SetupForm(
     title: String,
     instruction: String,
     mnemonic: List<String>?,
+    onRegenerateMnemonic: () -> Unit,
     isRestore: Boolean,
-    onSetupComplete: (String) -> Unit
+    onSetupComplete: (String) -> Unit,
+    onBack: () -> Unit
 ) {
     var password by remember { mutableStateOf("") }
     var duressPassword by remember { mutableStateOf("") }
@@ -130,14 +148,38 @@ fun SetupForm(
             .fillMaxSize()
             .background(Color(0xFF102027))
             .padding(24.dp)
-            .verticalScroll(androidx.compose.foundation.rememberScrollState()), // Enable scrolling
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .verticalScroll(androidx.compose.foundation.rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        // Header with Back Button
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        }
+        
         Spacer(modifier = Modifier.height(16.dp))
         Text(text = instruction, color = Color.Gray, fontSize = 14.sp)
-        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Show Regenerate Button if Creating Wallet
+        if (!isRestore && mnemonic != null) {
+            TextButton(onClick = onRegenerateMnemonic) {
+                Icon(Icons.Default.Refresh, contentDescription = null, tint = Color(0xFF64B5F6), modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Generate New Phrase", color = Color(0xFF64B5F6))
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
 
         if (!isRestore && mnemonic != null) {
             // SHOW MNEMONIC
@@ -177,7 +219,7 @@ fun SetupForm(
             onValueChange = { password = it },
             label = { Text("Set New Master Password") },
             singleLine = true,
-            visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+            visualTransformation = PasswordVisualTransformation(),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color.White,
                 unfocusedTextColor = Color.White,
@@ -196,7 +238,7 @@ fun SetupForm(
             label = { Text("Set Panic Password (Optional)") },
             placeholder = { Text("e.g. 0000") },
             singleLine = true,
-            visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+            visualTransformation = PasswordVisualTransformation(),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color.White,
                 unfocusedTextColor = Color.White,
@@ -223,7 +265,7 @@ fun SetupForm(
                 } else if (duressPassword.isNotEmpty() && duressPassword == password) {
                     error = "Panic Password cannot be the same as Master Password!"
                 } else {
-                    // Combine passwords with delimiter for simple passing: "master|duress"
+                    // Combine passwords: "master|duress"
                     val payload = if (duressPassword.isNotEmpty()) "$password|$duressPassword" else password
                     onSetupComplete(payload)
                 }
