@@ -82,6 +82,9 @@ fun VaultDashboard(
 fun SecretItem(item: SecretUiModel) {
     var revealed by remember { mutableStateOf(false) }
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+    var ticks by remember { mutableIntStateOf(30) } // Countdown timer
+    
     val scale by animateFloatAsState(
         targetValue = if (revealed) 0.98f else 1f,
         animationSpec = spring(
