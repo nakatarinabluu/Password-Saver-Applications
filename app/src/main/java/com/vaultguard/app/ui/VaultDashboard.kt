@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +24,8 @@ import com.vaultguard.app.ui.secret.SecretUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun VaultDashboard(
     onAddSecretClick: () -> Unit,
     onSignOut: () -> Unit,
@@ -30,9 +33,52 @@ fun VaultDashboard(
 ) {
     // Real Data
     val secrets by viewModel.secrets.collectAsState()
+    var showSettings by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val prefs = remember { context.getSharedPreferences("vault_guard_prefs", android.content.Context.MODE_PRIVATE) }
+    var isBiometricsEnabled by remember { mutableStateOf(prefs.getBoolean("biometrics_enabled", false)) }
 
     LaunchedEffect(Unit) {
         viewModel.loadSecrets()
+    }
+    
+    // SETTINGS DIALOG
+    if (showSettings) {
+        AlertDialog(
+            onDismissRequest = { showSettings = false },
+            title = { Text(text = "Settings") },
+            text = {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "Enable Biometric Login")
+                        Switch(
+                            checked = isBiometricsEnabled,
+                            onCheckedChange = { 
+                                isBiometricsEnabled = it
+                                prefs.edit().putBoolean("biometrics_enabled", it).apply()
+                            }
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextButton(
+                        onClick = { onSignOut() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Sign Out", color = Color.Red)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSettings = false }) {
+                    Text("Close")
+                }
+            },
+            containerColor = Color.White
+        )
     }
 
     Scaffold(
@@ -41,8 +87,8 @@ fun VaultDashboard(
                 title = { Text("ZeroKeep", color = Color.Black) }, // Minimal
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White), // White Bar
                 actions = {
-                    IconButton(onClick = onSignOut) {
-                        Icon(Icons.Default.ExitToApp, contentDescription = "Sign Out", tint = Color.Black)
+                    IconButton(onClick = { showSettings = true }) {
+                        Icon(androidx.compose.material.icons.filled.Settings, contentDescription = "Settings", tint = Color.Black)
                     }
                 }
             )
@@ -77,7 +123,7 @@ fun VaultDashboard(
         }
     }
 }
-
+ 
 @Composable
 fun SecretItem(item: SecretUiModel) {
     var revealed by remember { mutableStateOf(false) }
