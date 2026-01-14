@@ -18,4 +18,7 @@
     <string name="label_master_password">Master Password</string>
     <string name="btn_unlock">Unlock</string>
     <string name="btn_biometrics">Use Biometrics</string>
+    <string name="title_authenticate_to_save">Authenticate to Save</string>
+    <string name="subtitle_authenticate_to_save">Your vault is encrypted. Verify identity to save.</string>
+    <string name="btn_cancel">Cancel</string>
 </resources>
