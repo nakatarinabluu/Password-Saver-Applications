@@ -87,7 +87,7 @@ fun AuthScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF102027)) // Deep Navy Background
+            .background(MaterialTheme.colorScheme.background) // Obsidian Navy
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -97,7 +97,7 @@ fun AuthScreen(
                 stringResource(R.string.msg_attempts_remaining, 7 - attempts) 
             else 
                 stringResource(R.string.title_unlock), 
-            color = if (attempts > 4) Color.Red else Color.White
+            color = if (attempts > 4) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground
         )
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -109,10 +109,10 @@ fun AuthScreen(
             visualTransformation = PasswordVisualTransformation(),
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedBorderColor = if (attempts > 4) Color.Red else Color(0xFF64B5F6), // Light Blue focus
-                unfocusedBorderColor = Color.Gray
+                focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                focusedBorderColor = if (attempts > 4) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary, // Electric Blue focus
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
             ),
             modifier = Modifier.fillMaxWidth()
         )
@@ -123,10 +123,10 @@ fun AuthScreen(
             onClick = { 
                 viewModel.attemptUnlock(password)
             },
-            colors = ButtonDefaults.buttonColors(containerColor = if (attempts > 4) Color.Red else Color(0xFF1976D2)), // Primary Blue
+            colors = ButtonDefaults.buttonColors(containerColor = if (attempts > 4) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary), // Electric Blue
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(stringResource(R.string.btn_unlock), color = Color.White)
+            Text(stringResource(R.string.btn_unlock), color = MaterialTheme.colorScheme.onPrimary)
         }
         
         TextButton(onClick = { triggerBiometrics() }) {

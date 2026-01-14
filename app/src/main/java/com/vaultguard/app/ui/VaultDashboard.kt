@@ -103,6 +103,59 @@ fun VaultDashboard(
                     ) {
                         Text("Sign Out", color = Color.Red)
                     }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(text = "DANGER ZONE", color = Color.Red, style = MaterialTheme.typography.labelSmall)
+                    HorizontalDivider(color = Color.Red)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    var showPanicConfirm by remember { mutableStateOf(false) }
+                    var panicToken by remember { mutableStateOf("") }
+
+                    Button(
+                        onClick = { showPanicConfirm = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("⚠️ WIPE VAULT", color = Color.White, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                    }
+
+                    if (showPanicConfirm) {
+                        AlertDialog(
+                            onDismissRequest = { showPanicConfirm = false },
+                            title = { Text("CONFIRM DESTRUCTION") },
+                            text = {
+                                Column {
+                                    Text("This will permanently delete ALL data on the server and this device. This cannot be undone.", color = Color.Red)
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    OutlinedTextField(
+                                        value = panicToken,
+                                        onValueChange = { panicToken = it },
+                                        label = { Text("Enter Wipe Token") },
+                                        singleLine = true
+                                    )
+                                }
+                            },
+                            confirmButton = {
+                                Button(
+                                    onClick = {
+                                        viewModel.wipeVault(panicToken)
+                                        showPanicConfirm = false
+                                        showSettings = false
+                                        onSignOut() // Exit app
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                                ) {
+                                    Text("DESTROY EVERYTHING")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showPanicConfirm = false }) {
+                                    Text("Cancel")
+                                }
+                            }
+                        )
+                    }
                 }
             },
             confirmButton = {
@@ -117,18 +170,18 @@ fun VaultDashboard(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("ZeroKeep", color = Color.Black) }, // Minimal
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White), // White Bar
+                title = { Text("ZeroKeep", color = MaterialTheme.colorScheme.onSurface) }, // Dark Text on Surface
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface), // Use Surface Color
                 actions = {
                     IconButton(onClick = { showSettings = true }) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.Black)
+                        Icon(Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onSurface)
                     }
                 }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddSecretClick, containerColor = Color(0xFF000000)) { // Pure Black FAB
-                Icon(Icons.Default.Add, contentDescription = "Add Secret", tint = Color.White)
+            FloatingActionButton(onClick = onAddSecretClick, containerColor = MaterialTheme.colorScheme.primary) { 
+                Icon(Icons.Default.Add, contentDescription = "Add Secret", tint = MaterialTheme.colorScheme.onPrimary)
             }
         }
     ) { padding ->
@@ -136,17 +189,17 @@ fun VaultDashboard(
              Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFFF5F5F7)) // Apple Gray Background
+                    .background(MaterialTheme.colorScheme.background) 
                     .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Vault is empty. Add a secret!", color = Color.Gray)
+                Text("Vault is empty. Add a secret!", color = MaterialTheme.colorScheme.onBackground.copy(alpha=0.5f))
             }
         } else {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFF102027)) // Deep Navy Background
+                    .background(MaterialTheme.colorScheme.background) // Deep Navy Background
                     .padding(padding)
             ) {
                 items(secrets.size) { index ->
@@ -210,7 +263,7 @@ fun SecretItem(item: SecretUiModel) {
                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
             },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White) // Clean White Card
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface) // Clean Surface Card
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(
@@ -218,7 +271,7 @@ fun SecretItem(item: SecretUiModel) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = item.title, color = Color.Black, style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) 
+                Text(text = item.title, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) 
                 if (revealed) {
                     IconButton(onClick = {
                         clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(item.password))
@@ -226,7 +279,7 @@ fun SecretItem(item: SecretUiModel) {
                         Icon(
                             imageVector = androidx.compose.material.icons.Icons.Default.ContentCopy,
                             contentDescription = "Copy Password",
-                            tint = Color.Black
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }

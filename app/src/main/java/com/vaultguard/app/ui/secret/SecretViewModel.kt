@@ -105,6 +105,21 @@ class SecretViewModel @Inject constructor(
             }
         }
     }
+    fun wipeVault(token: String) {
+        viewModelScope.launch {
+            try {
+                val result = repository.wipeVault(token)
+                // If successful, local data should also be cleared or app reset
+                if (result.isSuccess) {
+                    securityManager.deleteKey() // Self-Destruct Local Key
+                    _secrets.value = emptyList() // Clear UI
+                }
+                // We might want to expose a separate state for wipe result
+            } catch (e: Exception) {
+                // Log error
+            }
+        }
+    }
 }
 
 data class SecretUiModel(

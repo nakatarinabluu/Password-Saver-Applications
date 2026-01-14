@@ -17,38 +17,58 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Color.Cyan,
-    secondary = Color.Gray,
-    tertiary = Color.White
+    primary = ElectricBlue,
+    secondary = NeonCyan,
+    tertiary = TextGray,
+    background = ObsidianNavy,
+    surface = ObsidianSurface,
+    onPrimary = Color.White,
+    onSecondary = Color.Black,
+    onBackground = TextWhite,
+    onSurface = TextWhite,
+    error = DangerRed
 )
 
+// We want to force Dark Theme or at least make Light Theme look similar (Strong)
+// But for now, let's define a "Light" that is just slightly lighter version of Strong matches
 private val LightColorScheme = lightColorScheme(
-    primary = Color.Cyan,
-    secondary = Color.Gray,
-    tertiary = Color.Black
+    primary = ElectricBlue,
+    secondary = NeonCyan,
+    tertiary = TextGray,
+    background = Color(0xFFF5F5F7), // Keep the "Swiss" light for contrast if system is light?
+    // User asked for "Simple but Strong" - usually means Dark Mode. 
+    // Let's make "Light" theme also dark-ish or just respect system.
+    // Given the user liked the "Obsidian" vibe, let's stick to Dark defaults.
+    surface = Color.White,
+    onPrimary = Color.White,
+    onBackground = Color.Black,
+    onSurface = Color.Black
 )
 
 @Composable
 fun ZeroKeepTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false, // DISABLE Dynamic Color to enforce OUR Brand
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
+        // dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+        //     val context = LocalContext.current
+        //     if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        // }
         darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        else -> DarkColorScheme // FORCE DARK THEME for that "Strong" look everywhere? 
+        // User complained theme "inside apps is different". 
+        // Best way to unify is enforce ONE theme.
     }
+    
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
+            window.statusBarColor = colorScheme.background.toArgb() // Match background
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
 

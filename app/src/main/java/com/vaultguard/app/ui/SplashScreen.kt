@@ -49,7 +49,7 @@ fun SplashScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F7)), // Swiss Minimal Light Gray
+            .background(MaterialTheme.colorScheme.background), // Use Theme Background
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -74,7 +74,7 @@ fun SplashScreen(
             ) {
                 Text(
                     text = "ZeroKeep",
-                    color = Color.Black, // Dark Text for Light Theme
+                    color = MaterialTheme.colorScheme.onBackground, // Use Theme Text Color
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 2.sp

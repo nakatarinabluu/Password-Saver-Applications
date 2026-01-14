@@ -52,7 +52,7 @@ fun WelcomeContent(onNewWallet: () -> Unit, onRestoreWallet: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF102027))
+            .background(MaterialTheme.colorScheme.background)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -68,7 +68,7 @@ fun WelcomeContent(onNewWallet: () -> Unit, onRestoreWallet: () -> Unit) {
         
         Text(
             text = "Welcome to ZeroKeep",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold
         )
@@ -82,17 +82,17 @@ fun WelcomeContent(onNewWallet: () -> Unit, onRestoreWallet: () -> Unit) {
 
         Button(
             onClick = onNewWallet,
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2)),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             modifier = Modifier.fillMaxWidth().height(56.dp)
         ) {
-            Text("Create New Vault", color = Color.White, fontSize = 16.sp)
+            Text("Create New Vault", color = MaterialTheme.colorScheme.onPrimary, fontSize = 16.sp)
         }
         
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedButton(
             onClick = onRestoreWallet,
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF64B5F6)),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
             modifier = Modifier.fillMaxWidth().height(56.dp)
         ) {
             Text("I have a Recovery Phrase")
