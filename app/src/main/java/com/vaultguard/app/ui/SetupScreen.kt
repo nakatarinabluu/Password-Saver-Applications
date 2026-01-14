@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.sp
 
 import androidx.compose.ui.res.stringResource
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
