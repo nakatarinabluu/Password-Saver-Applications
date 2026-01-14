@@ -29,7 +29,91 @@ fun VaultDashboard(
     onSignOut: () -> Unit,
     viewModel: SecretViewModel = hiltViewModel()
 ) {
-    // ... (lines 34-123 same)
+    // Real Data
+    val secrets by viewModel.secrets.collectAsState()
+    var showSettings by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val prefs = remember { context.getSharedPreferences("vault_guard_prefs", android.content.Context.MODE_PRIVATE) }
+    var isBiometricsEnabled by remember { mutableStateOf(prefs.getBoolean("biometrics_enabled", false)) }
+
+    // Biometric Verification Logic
+    val verifyBiometrics = {
+        val executor = androidx.core.content.ContextCompat.getMainExecutor(context)
+        val biometricPrompt = androidx.biometric.BiometricPrompt(
+            context as androidx.fragment.app.FragmentActivity,
+            executor,
+            object : androidx.biometric.BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: androidx.biometric.BiometricPrompt.AuthenticationResult) {
+                    super.onAuthenticationSucceeded(result)
+                    // SUCCESS: Enable and Save
+                    isBiometricsEnabled = true
+                    prefs.edit().putBoolean("biometrics_enabled", true).apply()
+                }
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    super.onAuthenticationError(errorCode, errString)
+                    // Failed: Do nothing (remains disabled)
+                }
+            }
+        )
+
+        val promptInfo = androidx.biometric.BiometricPrompt.PromptInfo.Builder()
+            .setTitle("Verify Identity")
+            .setSubtitle("Confirm biometrics to enable this feature")
+            .setNegativeButtonText("Cancel")
+            .build()
+            
+        biometricPrompt.authenticate(promptInfo)
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadSecrets()
+    }
+    
+    // SETTINGS DIALOG
+    if (showSettings) {
+        AlertDialog(
+            onDismissRequest = { showSettings = false },
+            title = { Text(text = "Settings") },
+            text = {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "Enable Biometric Login")
+                        Switch(
+                            checked = isBiometricsEnabled,
+                            onCheckedChange = { shouldEnable ->
+                                if (shouldEnable) {
+                                    // REQUIRE VERIFICATION to Turn ON
+                                    verifyBiometrics()
+                                } else {
+                                    // Turn OFF immediately
+                                    isBiometricsEnabled = false
+                                    prefs.edit().putBoolean("biometrics_enabled", false).apply()
+                                }
+                            }
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextButton(
+                        onClick = { onSignOut() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Sign Out", color = Color.Red)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSettings = false }) {
+                    Text("Close")
+                }
+            },
+            containerColor = Color.White
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
