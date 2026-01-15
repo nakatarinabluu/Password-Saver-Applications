@@ -77,6 +77,9 @@ class AuthViewModel @Inject constructor(
             
         resetState()
     }
+
+    val isBiometricEnabled: Boolean
+        get() = prefs.getBoolean("biometrics_enabled", false)
 }
 
 sealed class AuthState {

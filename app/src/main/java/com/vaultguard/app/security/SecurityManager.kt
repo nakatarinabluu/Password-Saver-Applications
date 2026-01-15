@@ -27,7 +27,7 @@ class SecurityManager(private val context: Context, private val prefs: SharedPre
 
     // SHA-256 of the Release Keystore (Update this with actual release key hash)
     // For Debug builds, this check is bypassed or logs a warning.
-    private val TRUSTED_SIGNATURE = "DUMMY_HASH_REPLACE_WITH_REAL_SHA256" 
+    private val EXPECTED_SIGNATURE = "DUMMY_HASH_REPLACE_WITH_REAL_SHA256" 
 
     init {
         if (!isDeviceSecure()) {
@@ -68,12 +68,12 @@ class SecurityManager(private val context: Context, private val prefs: SharedPre
 
             val isDebuggable = (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
-            if (currentHash != TRUSTED_SIGNATURE) {
+            if (currentHash != EXPECTED_SIGNATURE) {
                 if (!isDebuggable) {
                     // RELEASE BUILD: Strict Enforcement
-                    android.util.Log.e("SecurityManager", "FATAL: Signature Mismatch! Expected: $TRUSTED_SIGNATURE, Found: $currentHash")
+                    android.util.Log.e("SecurityManager", "FATAL: Signature Mismatch! Expected: $EXPECTED_SIGNATURE, Found: $currentHash")
                     deleteKey()
-                    System.exit(0)
+                    kotlin.system.exitProcess(0)
                 } else {
                     // DEBUG BUILD: Log warning but allow
                     android.util.Log.w("SecurityManager", "Signature Mismatch (Allowed in Debug). Current: $currentHash")

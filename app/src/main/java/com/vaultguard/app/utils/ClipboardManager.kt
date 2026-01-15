@@ -9,11 +9,22 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PersistableBundle
 
-class ClipboardManager(private val context: Context) {
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+
+class ClipboardManager(private val context: Context) : DefaultLifecycleObserver {
 
     private val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     private val handler = Handler(Looper.getMainLooper())
     private val CLEAR_DELAY_MS = 45000L // 45 seconds
+
+    override fun onStop(owner: LifecycleOwner) {
+        clear()
+    }
+
+    override fun onDestroy(owner: LifecycleOwner) {
+        clear()
+    }
 
     fun copyToClipboard(label: String, text: String) {
         val clip = ClipData.newPlainText(label, text)

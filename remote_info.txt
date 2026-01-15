@@ -1,0 +1,2 @@
+origin	https://github.com/nakatarinabluu/ZeroKeep-Applications (fetch)
+origin	https://github.com/nakatarinabluu/ZeroKeep-Applications (push)

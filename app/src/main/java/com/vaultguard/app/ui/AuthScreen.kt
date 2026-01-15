@@ -79,8 +79,7 @@ fun AuthScreen(
     
     // Trigger Biometrics ONCE on start (IF ENABLED)
     LaunchedEffect(Unit) {
-        val prefs = context.getSharedPreferences("vault_guard_prefs", android.content.Context.MODE_PRIVATE)
-        if (prefs.getBoolean("biometrics_enabled", false)) {
+        if (viewModel.isBiometricEnabled) {
             triggerBiometrics()
         }
     }

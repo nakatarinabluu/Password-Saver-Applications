@@ -11,11 +11,23 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
 
+import android.content.SharedPreferences
+
 @HiltViewModel
 class SecretViewModel @Inject constructor(
     private val repository: SecretRepository,
-    private val securityManager: SecurityManager
+    private val securityManager: SecurityManager,
+    private val prefs: SharedPreferences
 ) : ViewModel() {
+
+    private val _isBiometricsEnabled = MutableStateFlow(prefs.getBoolean("biometrics_enabled", false))
+    val isBiometricsEnabled: StateFlow<Boolean> = _isBiometricsEnabled
+
+    fun setBiometricEnabled(enabled: Boolean) {
+        _isBiometricsEnabled.value = enabled
+        prefs.edit().putBoolean("biometrics_enabled", enabled).apply()
+    }
+
 
     private val _saveState = MutableStateFlow<Result<Unit>?>(null)
     val saveState: StateFlow<Result<Unit>?> = _saveState

@@ -42,8 +42,8 @@ fun VaultDashboard(
     DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_PAUSE || event == androidx.lifecycle.Lifecycle.Event.ON_STOP) {
-                // 1. Clear Clipboard immediately
-                customClipboardManager.clear()
+                // 1. Clear Clipboard immediately via Observer (Manual call redundant but safe)
+                // customClipboardManager.clear() 
                 
                 // 2. Wipe Sensitive Data from RAM (ViewModel)
                 viewModel.clearSensitiveData()
@@ -53,13 +53,16 @@ fun VaultDashboard(
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
+        lifecycleOwner.lifecycle.addObserver(customClipboardManager) // Register Lifecycle-Aware Clipboard Manager
+        
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+            lifecycleOwner.lifecycle.removeObserver(customClipboardManager)
         }
     }
 
-    val prefs = remember { context.getSharedPreferences("vault_guard_encrypted_prefs", android.content.Context.MODE_PRIVATE) }
-    var isBiometricsEnabled by remember { mutableStateOf(prefs.getBoolean("biometrics_enabled", false)) }
+    // val prefs = remember { context.getSharedPreferences(...) } // REMOVED: Insecure
+    val isBiometricsEnabled by viewModel.isBiometricsEnabled.collectAsState()
 
     // Biometric Verification Logic
     val verifyBiometrics = {
@@ -71,8 +74,7 @@ fun VaultDashboard(
                 override fun onAuthenticationSucceeded(result: androidx.biometric.BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
                     // SUCCESS: Enable and Save
-                    isBiometricsEnabled = true
-                    prefs.edit().putBoolean("biometrics_enabled", true).apply()
+                    viewModel.setBiometricEnabled(true)
                 }
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     super.onAuthenticationError(errorCode, errString)
@@ -115,8 +117,7 @@ fun VaultDashboard(
                                     verifyBiometrics()
                                 } else {
                                     // Turn OFF immediately
-                                    isBiometricsEnabled = false
-                                    prefs.edit().putBoolean("biometrics_enabled", false).apply()
+                                    viewModel.setBiometricEnabled(false)
                                 }
                             }
                         )
