@@ -34,7 +34,9 @@ class SetupViewModel @Inject constructor(
                     .digest(saltSource.toByteArray(Charsets.UTF_8))
                     .take(16).toByteArray() // Use first 16 bytes as salt
 
-                val (keyBytes, salt) = kdfGenerator.deriveKey(mnemonicString, deterministicSalt)
+                val kdfResult = kdfGenerator.deriveKey(mnemonicString, deterministicSalt)
+                val keyBytes = kdfResult.first
+                val salt = kdfResult.second
                 val derivedKey = javax.crypto.spec.SecretKeySpec(keyBytes, "AES")
                 
                 // 2. Strict Verification (If Restoring)

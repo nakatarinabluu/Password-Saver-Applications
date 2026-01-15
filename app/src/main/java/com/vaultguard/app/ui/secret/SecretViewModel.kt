@@ -97,7 +97,9 @@ class SecretViewModel @Inject constructor(
                 val id = UUID.randomUUID().toString()
                 // Format: "username|password"
                 val payload = "$username|$secret" 
-                val (ivBytes, encryptedBytes) = securityManager.encrypt(payload.toByteArray(java.nio.charset.StandardCharsets.UTF_8), masterKey)
+                val encryptResult = securityManager.encrypt(payload.toByteArray(java.nio.charset.StandardCharsets.UTF_8), masterKey)
+                val ivBytes = encryptResult.first
+                val encryptedBytes = encryptResult.second
                 
                 val iv = ivBytes.joinToString("") { "%02x".format(it) }
                 val encryptedBlob = encryptedBytes.joinToString("") { "%02x".format(it) }
