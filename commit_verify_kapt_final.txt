@@ -1,0 +1,5 @@
+commit 56a4a10d69ee3c5340e392d8a722e15d80fdd4e0
+Author: Your Name <you@example.com>
+Date:   Fri Jan 16 01:03:55 2026 +0700
+
+    fix: Replace destructuring declarations in ViewModels to resolve KAPT error

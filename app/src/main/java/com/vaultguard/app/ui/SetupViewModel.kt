@@ -23,6 +23,10 @@ class SetupViewModel @Inject constructor(
     private val _setupState = MutableStateFlow<SetupState>(SetupState.Idle)
     val setupState: StateFlow<SetupState> = _setupState
 
+    fun completeSetup(password: String, mnemonic: List<String>, isRestore: Boolean) {
+        viewModelScope.launch {
+            _setupState.value = SetupState.Loading
+            try {
                 // 1. Derive Critical Key (Argon2id)
                 val mnemonicString = mnemonic.joinToString(" ")
                 
