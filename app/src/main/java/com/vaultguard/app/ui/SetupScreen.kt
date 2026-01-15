@@ -264,17 +264,70 @@ fun SetupForm(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // ... Biometric Logic ...
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val securityManager = remember { com.vaultguard.app.security.SecurityManager(context) }
+        var showBiometricPrompt by remember { mutableStateOf(false) }
+
+        if (showBiometricPrompt) {
+            val activity = context as? androidx.fragment.app.FragmentActivity
+            if (activity != null) {
+                val executor = androidx.core.content.ContextCompat.getMainExecutor(context)
+                val biometricPrompt = androidx.biometric.BiometricPrompt(activity, executor,
+                    object : androidx.biometric.BiometricPrompt.AuthenticationCallback() {
+                        override fun onAuthenticationSucceeded(result: androidx.biometric.BiometricPrompt.AuthenticationResult) {
+                            showBiometricPrompt = false
+                            // 1. Derive Key with Passphrase (Double-Lock)
+                            val masterKey = if (isRestore) {
+                                val words = recoveryInput.trim().split("\\s+".toRegex())
+                                // In Restore Mode: 'password' is the "Old Password / Passphrase" entered by user
+                                MnemonicUtils.deriveKey(words, password)
+                            } else {
+                                // In Create Mode: 'password' is the "New Master Password"
+                                MnemonicUtils.deriveKey(mnemonic ?: emptyList(), password)
+                            }
+                            
+                            // 2. Save Key (Wrap with Device Key)
+                            try {
+                                securityManager.saveMasterKey(masterKey)
+                                // 3. Finish
+                                onSetupComplete(password)
+                            } catch (e: Exception) {
+                                error = "Failed to secure key: ${e.message}"
+                            }
+                        }
+                        override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                            showBiometricPrompt = false
+                            error = "Auth Error: $errString"
+                        }
+                        override fun onAuthenticationFailed() {
+                            // keeps prompting
+                        }
+                    })
+
+                val promptInfo = androidx.biometric.BiometricPrompt.PromptInfo.Builder()
+                    .setTitle("Secure your Vault")
+                    .setSubtitle("Authenticate to bind your keys to this device")
+                    .setNegativeButtonText("Cancel")
+                    .build()
+
+                LaunchedEffect(Unit) {
+                    biometricPrompt.authenticate(promptInfo)
+                }
+            }
+        }
+
         Button(
             onClick = {
-                if (isRestore && recoveryInput.split(" ").size < 12) {
-                     error = "Please enter all 12 words separated by spaces."
+                if (isRestore && recoveryInput.split("\\s+".toRegex()).size != 12) {
+                     error = "Please enter exactly 12 words."
                 } else if (password.length < 6) {
                     error = "Password must be at least 6 characters"
                 } else if (password != confirmPassword) {
                     error = "Passwords do not match!"
                 } else {
-                    // Send ONLY password (Duress moved to settings)
-                    onSetupComplete(password)
+                    // Trigger Biometric Bind
+                    showBiometricPrompt = true
                 }
             },
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),

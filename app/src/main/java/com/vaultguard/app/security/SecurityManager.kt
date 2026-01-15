@@ -14,26 +14,169 @@ import javax.crypto.spec.GCMParameterSpec
 class SecurityManager(private val context: Context) {
 
     private val ANDROID_KEYSTORE = "AndroidKeyStore"
-    private val KEY_ALIAS = "VaultGuardMasterKey"
+    // New Alias for the WRAPPING Key (Device Local). 
+    // We do NOT use the old "VaultGuardMasterKey" alias for the wrapping key to avoid confusion, 
+    // but effectively we are replacing the old logic.
+    private val WRAP_KEY_ALIAS = "VaultGuardDeviceKey" 
     private val TRANSFORMATION = "AES/GCM/NoPadding"
+    private val PREFS_NAME = "vault_guard_secure_prefs"
+    private val KEY_WRAPPED_BLOB = "wrapped_master_key_blob"
+    private val KEY_WRAPPED_IV = "wrapped_master_key_iv"
 
     init {
         if (!isDeviceSecure()) {
             throw SecurityException("Device is compromised (Rooted/Hooked/Debugged)")
         }
-        generateKeyIfNotExists()
+        generateWrappingKeyIfNotExists()
+    }
+
+    // --- KEY MANAGEMENT (HYBRID) ---
+
+    /**
+     * Saves the Mnemonic-Derived Master Key securely.
+     * It encrypts (wraps) the Master Key using the Device-Bound Key (Biometric protected).
+     */
+    fun saveMasterKey(masterKey: SecretKey) {
+        val (iv, wrappedKey) = encryptLocal(masterKey.encoded)
+        
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putString(KEY_WRAPPED_BLOB, android.util.Base64.encodeToString(wrappedKey, android.util.Base64.NO_WRAP))
+            .putString(KEY_WRAPPED_IV, android.util.Base64.encodeToString(iv, android.util.Base64.NO_WRAP))
+            .apply()
     }
 
     /**
-     * SELF-DESTRUCT: Permanently removes the master key from the Keystore.
-     * This renders all stored data undecryptable.
+     * Loads the Master Key by unwrapping it with the Device-Bound Key.
+     * THIS REQUIRE USER AUTHENTICATION (Biometrics) if the Device Key requires it.
+     */
+    fun loadMasterKey(): SecretKey {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val wrappedBlobStr = prefs.getString(KEY_WRAPPED_BLOB, null) ?: throw IllegalStateException("No Master Key Found")
+        val ivStr = prefs.getString(KEY_WRAPPED_IV, null) ?: throw IllegalStateException("No IV Found")
+        
+        val wrappedBlob = android.util.Base64.decode(wrappedBlobStr, android.util.Base64.NO_WRAP)
+        val iv = android.util.Base64.decode(ivStr, android.util.Base64.NO_WRAP)
+        
+        val keyBytes = decryptLocal(iv, wrappedBlob)
+        return javax.crypto.spec.SecretKeySpec(keyBytes, "AES")
+    }
+    
+    fun hasMasterKey(): Boolean {
+         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+         return prefs.contains(KEY_WRAPPED_BLOB)
+    }
+
+    // --- CRYPTO OPERATIONS (USING MASTER KEY) ---
+    
+    // Encrypts User Data using the LOADED Master Key
+    fun encrypt(data: ByteArray, masterKey: SecretKey): Pair<ByteArray, ByteArray> {
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        cipher.init(Cipher.ENCRYPT_MODE, masterKey)
+
+        val iv = cipher.iv
+        val encryptedData = cipher.doFinal(data)
+
+        return Pair(iv, encryptedData)
+    }
+
+    // Decrypts User Data using the LOADED Master Key
+    fun decrypt(iv: ByteArray, encryptedData: ByteArray, masterKey: SecretKey): ByteArray {
+        val spec = GCMParameterSpec(128, iv)
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        cipher.init(Cipher.DECRYPT_MODE, masterKey, spec)
+
+        return cipher.doFinal(encryptedData)
+    }
+
+    // --- INTERNAL: DEVICE KEY MANAGEMENT (WRAPPING) ---
+
+    private fun generateWrappingKeyIfNotExists() {
+        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
+        keyStore.load(null)
+
+        if (!keyStore.containsAlias(WRAP_KEY_ALIAS)) {
+            val keyGenerator = KeyGenerator.getInstance(
+                KeyProperties.KEY_ALGORITHM_AES,
+                ANDROID_KEYSTORE
+            )
+
+            // StrongBox Check
+            val hasStrongBox = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                context.packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)
+            } else {
+                false
+            }
+
+            val keyGenParameterSpecBuilder = KeyGenParameterSpec.Builder(
+                WRAP_KEY_ALIAS,
+                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+            )
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setKeySize(256)
+                // Require Auth for DECRYPTING the key (Unwrapping)
+                .setUserAuthenticationRequired(true) 
+                .setUnlockedDeviceRequired(true)
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                 keyGenParameterSpecBuilder.setUserAuthenticationParameters(
+                     30, 
+                     KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL
+                 )
+            } else {
+                 @Suppress("DEPRECATION")
+                 keyGenParameterSpecBuilder.setUserAuthenticationValidityDurationSeconds(30)
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && hasStrongBox) {
+                keyGenParameterSpecBuilder.setIsStrongBoxBacked(true)
+            }
+
+            keyGenerator.init(keyGenParameterSpecBuilder.build())
+            keyGenerator.generateKey()
+        }
+    }
+
+    // Encrypts RAW BYTES using DEVICE KEY (No Auth needed usually for Encryption)
+    private fun encryptLocal(data: ByteArray): Pair<ByteArray, ByteArray> {
+        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
+        keyStore.load(null)
+        val secretKey = keyStore.getKey(WRAP_KEY_ALIAS, null) as SecretKey
+
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+
+        val iv = cipher.iv
+        val encryptedData = cipher.doFinal(data)
+
+        return Pair(iv, encryptedData)
+    }
+
+    // Decrypts RAW BYTES using DEVICE KEY (Auth REQUIRED)
+    private fun decryptLocal(iv: ByteArray, encryptedData: ByteArray): ByteArray {
+        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
+        keyStore.load(null)
+        val secretKey = keyStore.getKey(WRAP_KEY_ALIAS, null) as SecretKey
+
+        val spec = GCMParameterSpec(128, iv)
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
+
+        return cipher.doFinal(encryptedData)
+    }
+
+    /**
+     * SELF-DESTRUCT: Permanently removes the WRAPPING key and the Encrypted Blob.
      */
     fun deleteKey() {
         val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
         keyStore.load(null)
-        if (keyStore.containsAlias(KEY_ALIAS)) {
-            keyStore.deleteEntry(KEY_ALIAS)
+        if (keyStore.containsAlias(WRAP_KEY_ALIAS)) {
+            keyStore.deleteEntry(WRAP_KEY_ALIAS)
         }
+        // Also clear prefs
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().clear().apply()
     }
 
     /**
@@ -99,79 +242,5 @@ class SecurityManager(private val context: Context) {
         if (isEmulator) return false
 
         return true
-    }
-
-    private fun generateKeyIfNotExists() {
-        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
-        keyStore.load(null)
-
-        if (!keyStore.containsAlias(KEY_ALIAS)) {
-            val keyGenerator = KeyGenerator.getInstance(
-                KeyProperties.KEY_ALGORITHM_AES,
-                ANDROID_KEYSTORE
-            )
-
-            // StrongBox Check: Prefer Trusted Execution Environment (TEE) / StrongBox
-            val hasStrongBox = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                context.packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)
-            } else {
-                false
-            }
-
-            val keyGenParameterSpecBuilder = KeyGenParameterSpec.Builder(
-                KEY_ALIAS,
-                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
-            )
-                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .setKeySize(256)
-                // Require user authentication (Biometrics/PIN) within the last 30 seconds to use this key
-                .setUserAuthenticationRequired(true)
-                .setUnlockedDeviceRequired(true)
-            
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                 // Secure Hardware requirement
-                 keyGenParameterSpecBuilder.setUserAuthenticationParameters(
-                     30, 
-                     KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL
-                 )
-            } else {
-                 @Suppress("DEPRECATION")
-                 keyGenParameterSpecBuilder.setUserAuthenticationValidityDurationSeconds(30)
-            }
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && hasStrongBox) {
-                keyGenParameterSpecBuilder.setIsStrongBoxBacked(true)
-            }
-
-            keyGenerator.init(keyGenParameterSpecBuilder.build())
-            keyGenerator.generateKey()
-        }
-    }
-
-    fun encrypt(data: ByteArray): Pair<ByteArray, ByteArray> {
-        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
-        keyStore.load(null)
-        val secretKey = keyStore.getKey(KEY_ALIAS, null) as SecretKey
-
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey)
-
-        val iv = cipher.iv
-        val encryptedData = cipher.doFinal(data)
-
-        return Pair(iv, encryptedData)
-    }
-
-    fun decrypt(iv: ByteArray, encryptedData: ByteArray): ByteArray {
-        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
-        keyStore.load(null)
-        val secretKey = keyStore.getKey(KEY_ALIAS, null) as SecretKey
-
-        val spec = GCMParameterSpec(128, iv)
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
-
-        return cipher.doFinal(encryptedData)
     }
 }
