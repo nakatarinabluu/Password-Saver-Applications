@@ -129,10 +129,7 @@ class SecurityManager(private val context: Context) {
             //      @Suppress("DEPRECATION")
             //      keyGenParameterSpecBuilder.setUserAuthenticationValidityDurationSeconds(30)
             // }
-            } else {
-                 @Suppress("DEPRECATION")
-                 keyGenParameterSpecBuilder.setUserAuthenticationValidityDurationSeconds(30)
-            }
+
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && hasStrongBox) {
                 keyGenParameterSpecBuilder.setIsStrongBoxBacked(true)
