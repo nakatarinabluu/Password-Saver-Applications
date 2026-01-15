@@ -22,6 +22,10 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
+
+    @javax.inject.Inject
+    lateinit var prefs: android.content.SharedPreferences
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -37,9 +41,8 @@ class MainActivity : FragmentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val prefs = getSharedPreferences("vault_guard_prefs", MODE_PRIVATE)
                     val isSetupComplete = prefs.getBoolean("is_setup_complete", false)
-                    ZeroKeepApp(isSetupComplete)
+                    ZeroKeepApp(isSetupComplete, prefs)
                 }
             }
         }
@@ -47,7 +50,7 @@ class MainActivity : FragmentActivity() {
 }
 
 @Composable
-fun ZeroKeepApp(isSetupComplete: Boolean) {
+fun ZeroKeepApp(isSetupComplete: Boolean, prefs: android.content.SharedPreferences) {
     val navController = rememberNavController()
 
     NavHost(
@@ -67,7 +70,6 @@ fun ZeroKeepApp(isSetupComplete: Boolean) {
         composable("setup") {
             val context = androidx.compose.ui.platform.LocalContext.current
             SetupScreen(onSetupComplete = { password ->
-                val prefs = context.getSharedPreferences("vault_guard_prefs", android.content.Context.MODE_PRIVATE)
                 
                 // Save MASTER PASSWORD
                 val editor = prefs.edit()

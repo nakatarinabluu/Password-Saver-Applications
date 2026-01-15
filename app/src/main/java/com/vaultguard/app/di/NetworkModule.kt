@@ -18,15 +18,14 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val BASE_URL = "https://zerokeep.vercel.app/"
-
     init {
         System.loadLibrary("vaultguard")
     }
-    
+
     // NATIVE METHODS (Secrets hidden in C++)
     external fun getApiKey(): String
     external fun getHmacSecret(): String
+    external fun getBaseUrl(): String
 
     @Provides
     @Singleton
@@ -65,7 +64,7 @@ object NetworkModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(getBaseUrl())
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

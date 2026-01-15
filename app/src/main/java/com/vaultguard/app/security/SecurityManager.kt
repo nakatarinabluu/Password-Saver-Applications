@@ -11,7 +11,9 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
-class SecurityManager(private val context: Context) {
+import android.content.SharedPreferences
+
+class SecurityManager(private val context: Context, private val prefs: SharedPreferences) {
 
     private val ANDROID_KEYSTORE = "AndroidKeyStore"
     // New Alias for the WRAPPING Key (Device Local). 
@@ -19,15 +21,70 @@ class SecurityManager(private val context: Context) {
     // but effectively we are replacing the old logic.
     private val WRAP_KEY_ALIAS = "VaultGuardDeviceKey" 
     private val TRANSFORMATION = "AES/GCM/NoPadding"
-    private val PREFS_NAME = "vault_guard_secure_prefs"
+    // private val PREFS_NAME = "vault_guard_secure_prefs" // REMOVED - Using Injected Prefs
     private val KEY_WRAPPED_BLOB = "wrapped_master_key_blob"
     private val KEY_WRAPPED_IV = "wrapped_master_key_iv"
+
+    // SHA-256 of the Release Keystore (Update this with actual release key hash)
+    // For Debug builds, this check is bypassed or logs a warning.
+    private val TRUSTED_SIGNATURE = "DUMMY_HASH_REPLACE_WITH_REAL_SHA256" 
 
     init {
         if (!isDeviceSecure()) {
             throw SecurityException("Device is compromised (Rooted/Hooked/Debugged)")
         }
+        verifyAppSignature()
         generateWrappingKeyIfNotExists()
+    }
+    
+    // ...
+
+    private fun verifyAppSignature() {
+        try {
+            val pm = context.packageManager
+            val packageName = context.packageName
+            val flags = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES
+            } else {
+                android.content.pm.PackageManager.GET_SIGNATURES
+            }
+            
+            val packageInfo = pm.getPackageInfo(packageName, flags)
+            
+            val signatures = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                packageInfo.signingInfo.apkContentsSigners
+            } else {
+                packageInfo.signatures
+            }
+            
+            if (signatures == null || signatures.isEmpty()) {
+                throw SecurityException("No signature found")
+            }
+
+            val md = java.security.MessageDigest.getInstance("SHA-256")
+            val signatureBytes = signatures[0].toByteArray()
+            val digest = md.digest(signatureBytes)
+            val currentHash = digest.joinToString("") { "%02x".format(it) }
+
+            val isDebuggable = (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+
+            if (currentHash != TRUSTED_SIGNATURE) {
+                if (!isDebuggable) {
+                    // RELEASE BUILD: Strict Enforcement
+                    android.util.Log.e("SecurityManager", "FATAL: Signature Mismatch! Expected: $TRUSTED_SIGNATURE, Found: $currentHash")
+                    deleteKey()
+                    System.exit(0)
+                } else {
+                    // DEBUG BUILD: Log warning but allow
+                    android.util.Log.w("SecurityManager", "Signature Mismatch (Allowed in Debug). Current: $currentHash")
+                }
+            }
+        } catch (e: Exception) {
+            // If verification fails or crashes, tamper assumed (or platform error).
+            // In high security, we crash.
+             val isDebuggable = (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+             if (!isDebuggable) throw SecurityException("Signature verification failed", e)
+        }
     }
 
     // --- KEY MANAGEMENT (HYBRID) ---
@@ -39,7 +96,6 @@ class SecurityManager(private val context: Context) {
     fun saveMasterKey(masterKey: SecretKey) {
         val (iv, wrappedKey) = encryptLocal(masterKey.encoded)
         
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit()
             .putString(KEY_WRAPPED_BLOB, android.util.Base64.encodeToString(wrappedKey, android.util.Base64.NO_WRAP))
             .putString(KEY_WRAPPED_IV, android.util.Base64.encodeToString(iv, android.util.Base64.NO_WRAP))
@@ -51,7 +107,6 @@ class SecurityManager(private val context: Context) {
      * THIS REQUIRE USER AUTHENTICATION (Biometrics) if the Device Key requires it.
      */
     fun loadMasterKey(): SecretKey {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val wrappedBlobStr = prefs.getString(KEY_WRAPPED_BLOB, null) ?: throw IllegalStateException("No Master Key Found")
         val ivStr = prefs.getString(KEY_WRAPPED_IV, null) ?: throw IllegalStateException("No IV Found")
         
@@ -63,7 +118,6 @@ class SecurityManager(private val context: Context) {
     }
     
     fun hasMasterKey(): Boolean {
-         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
          return prefs.contains(KEY_WRAPPED_BLOB)
     }
 

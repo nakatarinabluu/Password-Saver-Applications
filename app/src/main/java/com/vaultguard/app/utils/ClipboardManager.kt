@@ -38,11 +38,12 @@ class ClipboardManager(private val context: Context) {
         handler.removeCallbacksAndMessages(null)
         
         handler.postDelayed({
-            clearClipboard()
+            clear()
         }, CLEAR_DELAY_MS)
     }
 
-    private fun clearClipboard() {
+    fun clear() {
+        handler.removeCallbacksAndMessages(null) // Cancel pending auto-clears
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             clipboard.clearPrimaryClip()
         } else {

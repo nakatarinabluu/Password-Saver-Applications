@@ -15,7 +15,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val securityManager: SecurityManager,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val prefs: android.content.SharedPreferences
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
@@ -25,7 +26,6 @@ class AuthViewModel @Inject constructor(
     private val MAX_ATTEMPTS = 7
 
     fun attemptUnlock(password: String) {
-        val prefs = context.getSharedPreferences("vault_guard_prefs", Context.MODE_PRIVATE)
         // Default to "password123" only if not set (backward compatibility)
         val validPassword = prefs.getString("master_password", "password123") ?: "password123"
         val duressPassword = prefs.getString("duress_password", null)
@@ -73,10 +73,7 @@ class AuthViewModel @Inject constructor(
         securityManager.deleteKey()
         
         // 2. Clear App Preferences (Auth, Flags, etc.)
-        context.getSharedPreferences("vault_guard_prefs", Context.MODE_PRIVATE)
-            .edit()
-            .clear()
-            .apply()
+        prefs.edit().clear().apply()
             
         resetState()
     }

@@ -106,6 +106,11 @@ class SecretViewModel @Inject constructor(
             }
         }
     }
+    fun clearSensitiveData() {
+        _secrets.value = emptyList()
+        _saveState.value = null
+    }
+
     // ... wipeVault ...
 }
 

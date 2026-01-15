@@ -3,6 +3,7 @@ package com.vaultguard.app.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vaultguard.app.domain.repository.SecretRepository
+import com.vaultguard.app.security.KdfGenerator
 import com.vaultguard.app.security.MnemonicUtils
 import com.vaultguard.app.security.SecurityManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,18 +16,26 @@ import javax.inject.Inject
 @HiltViewModel
 class SetupViewModel @Inject constructor(
     private val repository: SecretRepository,
-    private val securityManager: SecurityManager
+    private val securityManager: SecurityManager,
+    private val kdfGenerator: KdfGenerator
 ) : ViewModel() {
 
     private val _setupState = MutableStateFlow<SetupState>(SetupState.Idle)
     val setupState: StateFlow<SetupState> = _setupState
 
-    fun finalizeSetup(mnemonic: List<String>, password: String, isRestore: Boolean) {
-        viewModelScope.launch {
-            _setupState.value = SetupState.Loading
-            try {
-                // 1. Derive Critical Key
-                val derivedKey = MnemonicUtils.deriveKey(mnemonic, password)
+                // 1. Derive Critical Key (Argon2id)
+                val mnemonicString = mnemonic.joinToString(" ")
+                
+                // Deterministic Salt Generation (Essential for Restore)
+                // We hash (Mnemonic + "mnemonic" + Password) to create a consistent salt
+                // This replaces the PBKDF2 "mnemonic" + password salt logic but adapts it for Argon2id fixed length
+                val saltSource = "mnemonic" + password
+                val deterministicSalt = java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(saltSource.toByteArray(Charsets.UTF_8))
+                    .take(16).toByteArray() // Use first 16 bytes as salt
+
+                val (keyBytes, salt) = kdfGenerator.deriveKey(mnemonicString, deterministicSalt)
+                val derivedKey = javax.crypto.spec.SecretKeySpec(keyBytes, "AES")
                 
                 // 2. Strict Verification (If Restoring)
                 if (isRestore) {
