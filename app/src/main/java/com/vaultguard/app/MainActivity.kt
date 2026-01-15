@@ -26,8 +26,14 @@ class MainActivity : FragmentActivity() {
     @javax.inject.Inject
     lateinit var prefs: android.content.SharedPreferences
 
+    @javax.inject.Inject
+    lateinit var clipboardManager: com.vaultguard.app.utils.ClipboardManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // LIFECYCLE: Register Clipboard Limiter (Clears clipboard on background)
+        lifecycle.addObserver(clipboardManager)
 
         // ANTI-FORENSICS: Global FLAG_SECURE to prevent screenshots and screen recording
         window.setFlags(

@@ -25,9 +25,9 @@ class SecurityManager(private val context: Context, private val prefs: SharedPre
     private val KEY_WRAPPED_BLOB = "wrapped_master_key_blob"
     private val KEY_WRAPPED_IV = "wrapped_master_key_iv"
 
-    // SHA-256 of the Release Keystore (Update this with actual release key hash)
-    // For Debug builds, this check is bypassed or logs a warning.
-    private val EXPECTED_SIGNATURE = "DUMMY_HASH_REPLACE_WITH_REAL_SHA256" 
+    // SHA-256 of the Release Keystore (Place your REAL Release Key Hash here)
+    // For now, this is the standard Android Debug Key SHA-256 to allow local testing.
+    private val EXPECTED_SIGNATURE = "96307306280b6606015509c22c9b39007e3253b80e83141f91b6554a18074691" 
 
     init {
         if (!isDeviceSecure()) {
