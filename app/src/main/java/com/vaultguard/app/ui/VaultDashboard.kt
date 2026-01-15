@@ -105,8 +105,8 @@ fun VaultDashboard(
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
-                    Text(text = "DANGER ZONE", color = Color.Red, style = MaterialTheme.typography.labelSmall)
-                    Divider(color = Color.Red)
+                    Text(text = "DANGER ZONE", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
+                    Divider(color = MaterialTheme.colorScheme.error)
                     Spacer(modifier = Modifier.height(8.dp))
                     
                     var showPanicConfirm by remember { mutableStateOf(false) }
@@ -114,10 +114,10 @@ fun VaultDashboard(
 
                     Button(
                         onClick = { showPanicConfirm = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("⚠️ WIPE VAULT", color = Color.White, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                        Text("⚠️ WIPE VAULT", color = MaterialTheme.colorScheme.onError, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                     }
 
                     if (showPanicConfirm) {
@@ -126,7 +126,7 @@ fun VaultDashboard(
                             title = { Text("CONFIRM DESTRUCTION") },
                             text = {
                                 Column {
-                                    Text("This will permanently delete ALL data on the server and this device. This cannot be undone.", color = Color.Red)
+                                    Text("This will permanently delete ALL data on the server and this device. This cannot be undone.", color = MaterialTheme.colorScheme.error)
                                     Spacer(modifier = Modifier.height(8.dp))
                                     OutlinedTextField(
                                         value = panicToken,
@@ -144,16 +144,17 @@ fun VaultDashboard(
                                         showSettings = false
                                         onSignOut() // Exit app
                                     },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                                 ) {
-                                    Text("DESTROY EVERYTHING")
+                                    Text("DESTROY EVERYTHING", color = MaterialTheme.colorScheme.onError)
                                 }
                             },
                             dismissButton = {
                                 TextButton(onClick = { showPanicConfirm = false }) {
                                     Text("Cancel")
                                 }
-                            }
+                            },
+                            containerColor = MaterialTheme.colorScheme.surface
                         )
                     }
                 }
@@ -163,7 +164,7 @@ fun VaultDashboard(
                     Text("Close")
                 }
             },
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 
@@ -291,7 +292,7 @@ fun SecretItem(item: SecretUiModel) {
                 androidx.compose.animation.Crossfade(targetState = revealed, label = "PasswordReveal") { isRevealed ->
                     Text(
                         text = if (isRevealed) item.password else "••••••••",
-                        color = if (isRevealed) Color(0xFF2962FF) else Color.Gray, // Accent Blue when revealed
+                        color = if (isRevealed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, 
                         style = if (isRevealed) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.titleLarge
                     )
                 }
@@ -305,7 +306,7 @@ fun SecretItem(item: SecretUiModel) {
                     ) {
                         Text(
                             text = "Hiding in ${ticks}s", 
-                            color = if (ticks < 10) Color(0xFFEF5350) else Color.Gray, 
+                            color = if (ticks < 10) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant, 
                             style = MaterialTheme.typography.bodySmall
                         )
                     }

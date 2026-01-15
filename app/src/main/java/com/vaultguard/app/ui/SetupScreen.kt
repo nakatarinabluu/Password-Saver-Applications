@@ -75,7 +75,7 @@ fun WelcomeContent(onNewWallet: () -> Unit, onRestoreWallet: () -> Unit) {
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Secure your digital life.",
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 16.sp
         )
         Spacer(modifier = Modifier.height(48.dp))
@@ -150,7 +150,7 @@ fun SetupForm(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF102027))
+            .background(MaterialTheme.colorScheme.background)
             .padding(24.dp)
             .verticalScroll(androidx.compose.foundation.rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -164,22 +164,22 @@ fun SetupForm(
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
-                    tint = Color.White
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            Text(text = title, color = MaterialTheme.colorScheme.onBackground, fontSize = 24.sp, fontWeight = FontWeight.Bold)
         }
         
         Spacer(modifier = Modifier.height(16.dp))
-        Text(text = instruction, color = Color.Gray, fontSize = 14.sp)
+        Text(text = instruction, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
         
         // Show Regenerate Button if Creating Wallet
         if (!isRestore && mnemonic != null) {
             TextButton(onClick = onRegenerateMnemonic) {
-                Icon(Icons.Default.Refresh, contentDescription = null, tint = Color(0xFF64B5F6), modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Generate New Phrase", color = Color(0xFF64B5F6))
+                Text("Generate New Phrase", color = MaterialTheme.colorScheme.primary)
             }
         } else if (isRestore) {
             Spacer(modifier = Modifier.height(16.dp))
@@ -189,12 +189,12 @@ fun SetupForm(
 
         if (!isRestore && mnemonic != null) {
             // SHOW MNEMONIC
-            Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF1C2D35))) {
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     mnemonic.chunked(3).forEach { rowWords ->
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                             rowWords.forEach { word ->
-                                Text(text = word, color = Color(0xFF64B5F6), fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(4.dp))
+                                Text(text = word, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(4.dp))
                             }
                         }
                     }
@@ -207,10 +207,10 @@ fun SetupForm(
                 onValueChange = { recoveryInput = it },
                 label = { Text("Recovery Phrase (12 words)") },
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = Color(0xFF64B5F6),
-                    unfocusedBorderColor = Color.Gray
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
                 ),
                 modifier = Modifier.fillMaxWidth().height(120.dp),
                 maxLines = 4
@@ -232,14 +232,14 @@ fun SetupForm(
                 else Icons.Filled.VisibilityOff
 
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(imageVector = image, contentDescription = null, tint = Color.Gray)
+                    Icon(imageVector = image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             },
             colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedBorderColor = Color(0xFF64B5F6),
-                unfocusedBorderColor = Color.Gray
+                focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
             ),
             modifier = Modifier.fillMaxWidth()
         )
@@ -254,10 +254,10 @@ fun SetupForm(
             singleLine = true,
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedBorderColor = Color(0xFF64B5F6),
-                unfocusedBorderColor = Color.Gray
+                focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
             ),
             modifier = Modifier.fillMaxWidth()
         )
@@ -277,15 +277,15 @@ fun SetupForm(
                     onSetupComplete(password)
                 }
             },
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2)),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(if (isRestore) "Restore & Finish" else "Connect & Finish", color = Color.White)
+            Text(if (isRestore) "Restore & Finish" else "Connect & Finish", color = MaterialTheme.colorScheme.onPrimary)
         }
         
         if (error != null) {
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = error!!, color = Color.Red)
+            Text(text = error!!, color = MaterialTheme.colorScheme.error)
         }
     }
 }

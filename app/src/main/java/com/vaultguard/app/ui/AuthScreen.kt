@@ -130,7 +130,7 @@ fun AuthScreen(
         }
         
         TextButton(onClick = { triggerBiometrics() }) {
-            Text(stringResource(R.string.btn_biometrics), color = Color.Gray)
+            Text(stringResource(R.string.btn_biometrics), color = MaterialTheme.colorScheme.secondary)
         }
     }
 }
