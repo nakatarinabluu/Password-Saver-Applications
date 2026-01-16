@@ -342,7 +342,7 @@ fun SecretItem(
                 
                 IconButton(onClick = { showDeleteConfirm = true }) {
                      Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Default.Delete,
+                        imageVector = androidx.compose.material.icons.Icons.Filled.Delete,
                         contentDescription = "Delete",
                         tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
                     )
