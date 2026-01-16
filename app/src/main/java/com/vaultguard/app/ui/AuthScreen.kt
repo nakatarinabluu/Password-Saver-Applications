@@ -135,8 +135,10 @@ fun AuthScreen(
             Text(stringResource(R.string.btn_unlock), color = MaterialTheme.colorScheme.onPrimary)
         }
         
-        TextButton(onClick = { triggerBiometrics() }) {
-            Text(stringResource(R.string.btn_biometrics), color = MaterialTheme.colorScheme.secondary)
+        if (viewModel.isBiometricEnabled) {
+            TextButton(onClick = { triggerBiometrics() }) {
+                Text(stringResource(R.string.btn_biometrics), color = MaterialTheme.colorScheme.secondary)
+            }
         }
         
         Spacer(modifier = Modifier.height(16.dp))
