@@ -1,81 +1,95 @@
 package com.vaultguard.app.security
 
+
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.util.Base64
+import android.util.Log
 import java.security.KeyStore
+import java.security.MessageDigest
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
-import android.content.SharedPreferences
-import android.util.Base64
+import kotlin.system.exitProcess
 
+/**
+ * Core Security Module for VaultGuard.
+ *
+ * This class handles:
+ * 1. Device Integrity Checks (Root, Frida, Hooking, Debugging).
+ * 2. Application Integrity Checks (Signature Verification).
+ * 3. Key Management (Master Key Wrapping using AndroidKeyStore).
+ * 4. Cryptographic Operations (AES-GCM Encryption/Decryption).
+ *
+ * Checks are performed using a "Defense in Depth" strategy, combining
+ * Native (C++) checks for stealth and Java checks for breadth.
+ */
 class SecurityManager(private val context: Context, private val prefs: SharedPreferences) {
 
-    private val ANDROID_KEYSTORE = "AndroidKeyStore"
-    private val WRAP_KEY_ALIAS = "VaultGuardDeviceKey" 
-    private val TRANSFORMATION = "AES/GCM/NoPadding"
-    private val KEY_WRAPPED_BLOB = "wrapped_master_key_blob"
-    private val KEY_WRAPPED_IV = "wrapped_master_key_iv"
+    private companion object {
+        const val TAG = "SecurityManager"
+        const val ANDROID_KEYSTORE = "AndroidKeyStore"
+        const val WRAP_KEY_ALIAS = "VaultGuardDeviceKey"
+        const val TRANSFORMATION = "AES/GCM/NoPadding"
+        const val KEY_WRAPPED_BLOB = "wrapped_master_key_blob"
+        const val KEY_WRAPPED_IV = "wrapped_master_key_iv"
+        
+        // Critical: Native library name
+        const val NATIVE_LIB = "vaultguard"
+    }
 
-    // NATIVE METHODS
+    // --- NATIVE INTERFACE ---
+    /**
+     * Retrieves the expected SHA-256 signature hash of the APK from native code.
+     * This string is obfuscated in the C++ layer.
+     */
     external fun getAppSignature(): String
+
+    /**
+     * Performs a native memory scan (reading /proc/self/maps) to detect
+     * hooking frameworks like Frida, GumJS, or LTrace.
+     */
     external fun checkFrida(): Boolean
 
     init {
-        // Load library
-        System.loadLibrary("vaultguard")
+        try {
+            System.loadLibrary(NATIVE_LIB)
+        } catch (e: UnsatisfiedLinkError) {
+            // If native lib fails to load, the app is likely tampered or broken.
+            Log.e(TAG, "FATAL: Failed to load native security library.")
+            exitApp()
+        }
         
         if (!isDeviceSecure()) {
-            throw SecurityException("Device is compromised (Rooted/Hooked/Debugged)")
+            throw SecurityException("Device integrity check failed. Environment is compromised.")
         }
+        
         verifyAppSignature()
         generateWrappingKeyIfNotExists()
     }
 
+    /**
+     * Verifies the APK's signing certificate against the expected hash stored in Native C++.
+     * Mismatches trigger immediate app termination in Release builds.
+     */
     private fun verifyAppSignature() {
         try {
-            val pm = context.packageManager
-            val packageName = context.packageName
-            val flags = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES
-            } else {
-                android.content.pm.PackageManager.GET_SIGNATURES
-            }
-            
-            val packageInfo = pm.getPackageInfo(packageName, flags)
-            
-            val signatures = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                packageInfo.signingInfo.apkContentsSigners
-            } else {
-                packageInfo.signatures
-            }
-            
-            if (signatures == null || signatures.isEmpty()) {
-                throw SecurityException("No signature found")
-            }
-
-            val md = java.security.MessageDigest.getInstance("SHA-256")
-            val signatureBytes = signatures[0].toByteArray()
-            val digest = md.digest(signatureBytes)
-            val currentHash = digest.joinToString("") { "%02x".format(it) }
-
-            // RETRIEVE EXPECTED HASH FROM NATIVE LAYER
-            val expectedSignature = getAppSignature()
+            val currentHash = getComputedSignatureHash()
+            val expectedSignature = getAppSignature() // From JNI
 
             val isDebuggable = (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
             if (currentHash != expectedSignature) {
                 if (!isDebuggable) {
-                    // RELEASE BUILD: Strict Enforcement
-                    android.util.Log.e("SecurityManager", "FATAL: Signature Mismatch! Expected: $expectedSignature, Found: $currentHash")
-                    deleteKey()
-                    kotlin.system.exitProcess(0)
+                    Log.e(TAG, "FATAL: Signature Mismatch! App may be tampered.")
+                    deleteKey() // Nuke data
+                    exitApp()
                 } else {
-                    // DEBUG BUILD: Log warning but allow
-                    android.util.Log.w("SecurityManager", "Signature Mismatch (Allowed in Debug). Current: $currentHash")
+                    Log.w(TAG, "Signature Mismatch (Allowed in Debug Mode).")
                 }
             }
         } catch (e: Exception) {
@@ -84,42 +98,74 @@ class SecurityManager(private val context: Context, private val prefs: SharedPre
         }
     }
 
+    /**
+     * Computes SHA-256 hash of the current APK signature.
+     */
+    private fun getComputedSignatureHash(): String {
+        val pm = context.packageManager
+        val packageName = context.packageName
+        
+        // Handle different API levels for signature retrieval
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES
+        } else {
+            android.content.pm.PackageManager.GET_SIGNATURES
+        }
+        
+        val packageInfo = pm.getPackageInfo(packageName, flags)
+        
+        val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            packageInfo.signingInfo.apkContentsSigners
+        } else {
+            packageInfo.signatures
+        }
+        
+        if (signatures == null || signatures.isEmpty()) {
+            throw SecurityException("No signing certificates found.")
+        }
+
+        val md = MessageDigest.getInstance("SHA-256")
+        val signatureBytes = signatures[0].toByteArray()
+        val digest = md.digest(signatureBytes)
+        return digest.joinToString("") { "%02x".format(it) }
+    }
+
+    /**
+     * Aggregates multiple security checks:
+     * 1. Native Frida Scan
+     * 2. Root Access (SU Binaries)
+     * 3. Custom ROM Indicators (Test Keys)
+     * 4. Debugger Connection
+     * 5. Java-based Hooking Checks (Stacktrace analysis)
+     * 6. Emulator Detection
+     */
     private fun isDeviceSecure(): Boolean {
-        // 1. NATIVE FRIDA PROTECTION (First Line of Defense)
+        // 1. NATIVE FRIDA PROTECTION (First Line of Defense - Fastest)
         if (checkFrida()) {
-             android.util.Log.e("SecurityManager", "Frida/Hooking Detected via Native Scan!")
+             Log.e(TAG, "Frida/Hooking Detected via Native Scan!")
              return false
         }
 
-        // 2. Check for basic Root binaries
-        val paths = arrayOf(
-            "/system/app/Superuser.apk",
-            "/sbin/su",
-            "/system/bin/su",
-            "/system/xbin/su",
-            "/data/local/xbin/su",
-            "/data/local/bin/su",
-            "/system/sd/xbin/su",
-            "/system/bin/failsafe/su",
-            "/data/local/su"
-        )
-        for (path in paths) {
-            if (java.io.File(path).exists()) return false
-        }
+        // 2. Debugging Check
+        if (android.os.Debug.isDebuggerConnected()) return false
 
-        // 3. Check for Test Keys (Custom ROMs)
+        // 3. Root Detection (Common Paths)
+        val suPaths = arrayOf(
+            "/system/app/Superuser.apk", "/sbin/su", "/system/bin/su", "/system/xbin/su",
+            "/data/local/xbin/su", "/data/local/bin/su", "/system/sd/xbin/su",
+            "/system/bin/failsafe/su", "/data/local/su"
+        )
+        if (suPaths.any { java.io.File(it).exists() }) return false
+
+        // 4. Test Keys (Custom ROMs)
         val buildTags = Build.TAGS
         if (buildTags != null && buildTags.contains("test-keys")) return false
 
-        // 4. Check for Debugging
-        if (android.os.Debug.isDebuggerConnected()) return false
-        
-        // 5. Check for Frida / Xposed (Java-based checks)
+        // 5. Java-based Hooking Detection (Stack Inspection)
         try {
-            throw Exception("Check")
+            throw Exception("StackCheck")
         } catch (e: Exception) {
-            val stackTrace = e.stackTrace
-            for (element in stackTrace) {
+            for (element in e.stackTrace) {
                 if (element.className.contains("de.robv.android.xposed") || 
                     element.className.contains("com.saurik.substrate") ||
                     element.className.contains("frida")) {
@@ -128,7 +174,7 @@ class SecurityManager(private val context: Context, private val prefs: SharedPre
             }
         }
 
-        // 6. Check for Emulator
+        // 6. Emulator Detection (Heuristic)
         val isEmulator = (Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic"))
                 || Build.FINGERPRINT.startsWith("generic")
                 || Build.FINGERPRINT.startsWith("unknown")
@@ -138,10 +184,7 @@ class SecurityManager(private val context: Context, private val prefs: SharedPre
                 || Build.MODEL.contains("Emulator")
                 || Build.MODEL.contains("Android SDK built for x86")
                 || Build.MANUFACTURER.contains("Genymotion")
-                || Build.PRODUCT.contains("sdk_google")
-                || Build.PRODUCT.contains("google_sdk")
                 || Build.PRODUCT.contains("sdk")
-                || Build.PRODUCT.contains("sdk_x86")
                 || Build.PRODUCT.contains("vbox86p")
                 || Build.PRODUCT.contains("emulator")
                 || Build.PRODUCT.contains("simulator")
@@ -175,6 +218,10 @@ class SecurityManager(private val context: Context, private val prefs: SharedPre
         }
     }
 
+    /**
+     * Encrypts (Wraps) the provided Master SecretKey using the hardware-backed keystore key.
+     * The encrypted blob and IV are stored in SharedPreferences.
+     */
     fun saveMasterKey(secretKey: SecretKey) {
         try {
             val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
@@ -187,7 +234,6 @@ class SecurityManager(private val context: Context, private val prefs: SharedPre
             val wrappedKeyBytes = cipher.wrap(secretKey)
             val iv = cipher.iv
 
-            // Store Blob + IV
             prefs.edit()
                 .putString(KEY_WRAPPED_BLOB, Base64.encodeToString(wrappedKeyBytes, Base64.NO_WRAP))
                 .putString(KEY_WRAPPED_IV, Base64.encodeToString(iv, Base64.NO_WRAP))
@@ -197,6 +243,10 @@ class SecurityManager(private val context: Context, private val prefs: SharedPre
         }
     }
 
+    /**
+     * Loads and Decrypts (Unwraps) the Master SecretKey from storage.
+     * Throws SecurityException if the key cannot be recovered.
+     */
     fun loadMasterKey(): SecretKey {
         try {
             val wrappedBlobStr = prefs.getString(KEY_WRAPPED_BLOB, null) ?: throw SecurityException("No Master Key Found")
@@ -223,17 +273,28 @@ class SecurityManager(private val context: Context, private val prefs: SharedPre
         return prefs.contains(KEY_WRAPPED_BLOB)
     }
 
+    /**
+     * Irreversibly destroys the Master Key data.
+     * This renders all stored secrets unreadable.
+     */
     fun deleteKey() {
         try {
             val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
             keyStore.load(null)
+            // Optional: We could delete WRAP_KEY_ALIAS too, but clearing the blob is sufficient
+            // and allows the device key to be reused for a new wallet.
+            // For a paranoid wipe, we delete everything.
             if (keyStore.containsAlias(WRAP_KEY_ALIAS)) {
                 keyStore.deleteEntry(WRAP_KEY_ALIAS)
             }
             prefs.edit().remove(KEY_WRAPPED_BLOB).remove(KEY_WRAPPED_IV).apply()
         } catch (e: Exception) {
-            // Ignore
+            Log.e(TAG, "Error deleting keys", e)
         }
+    }
+
+    private fun exitApp() {
+        exitProcess(0)
     }
 
     // --- CRYPTO UTILS ---
