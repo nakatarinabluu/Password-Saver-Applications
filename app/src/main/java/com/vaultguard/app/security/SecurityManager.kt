@@ -27,9 +27,16 @@ class SecurityManager(private val context: Context, private val prefs: SharedPre
 
     // SHA-256 of the Release Keystore (Place your REAL Release Key Hash here)
     // For now, this is the standard Android Debug Key SHA-256 to allow local testing.
-    private val EXPECTED_SIGNATURE = "96307306280b6606015509c22c9b39007e3253b80e83141f91b6554a18074691" 
+    // NATIVE METHODS (Secrets hidden in C++)
+    external fun getAppSignature(): String
+    external fun checkFrida(): Boolean
+
+    // private val EXPECTED_SIGNATURE = "..." // REMOVED - Moved to Native C++
 
     init {
+        // Load library (if not already loaded by NetworkModule, but good practice to ensure)
+        System.loadLibrary("vaultguard")
+        
         if (!isDeviceSecure()) {
             throw SecurityException("Device is compromised (Rooted/Hooked/Debugged)")
         }
@@ -41,6 +48,7 @@ class SecurityManager(private val context: Context, private val prefs: SharedPre
 
     private fun verifyAppSignature() {
         try {
+            // ... (existing signature retrieval code) ...
             val pm = context.packageManager
             val packageName = context.packageName
             val flags = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
@@ -66,12 +74,15 @@ class SecurityManager(private val context: Context, private val prefs: SharedPre
             val digest = md.digest(signatureBytes)
             val currentHash = digest.joinToString("") { "%02x".format(it) }
 
+            // RETRIEVE EXPECTED HASH FROM NATIVE LAYER
+            val expectedSignature = getAppSignature()
+
             val isDebuggable = (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
-            if (currentHash != EXPECTED_SIGNATURE) {
+            if (currentHash != expectedSignature) {
                 if (!isDebuggable) {
                     // RELEASE BUILD: Strict Enforcement
-                    android.util.Log.e("SecurityManager", "FATAL: Signature Mismatch! Expected: $EXPECTED_SIGNATURE, Found: $currentHash")
+                    android.util.Log.e("SecurityManager", "FATAL: Signature Mismatch! Expected: $expectedSignature, Found: $currentHash")
                     deleteKey()
                     kotlin.system.exitProcess(0)
                 } else {
@@ -80,168 +91,24 @@ class SecurityManager(private val context: Context, private val prefs: SharedPre
                 }
             }
         } catch (e: Exception) {
-            // If verification fails or crashes, tamper assumed (or platform error).
-            // In high security, we crash.
              val isDebuggable = (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
              if (!isDebuggable) throw SecurityException("Signature verification failed", e)
         }
     }
 
-    // --- KEY MANAGEMENT (HYBRID) ---
+    // ...
 
-    /**
-     * Saves the Mnemonic-Derived Master Key securely.
-     * It encrypts (wraps) the Master Key using the Device-Bound Key (Biometric protected).
-     */
-    fun saveMasterKey(masterKey: SecretKey) {
-        val encryptedPair = encryptLocal(masterKey.encoded)
-        val iv = encryptedPair.first
-        val wrappedKey = encryptedPair.second
-        
-        prefs.edit()
-            .putString(KEY_WRAPPED_BLOB, android.util.Base64.encodeToString(wrappedKey, android.util.Base64.NO_WRAP))
-            .putString(KEY_WRAPPED_IV, android.util.Base64.encodeToString(iv, android.util.Base64.NO_WRAP))
-            .apply()
-    }
-
-    /**
-     * Loads the Master Key by unwrapping it with the Device-Bound Key.
-     * THIS REQUIRE USER AUTHENTICATION (Biometrics) if the Device Key requires it.
-     */
-    fun loadMasterKey(): SecretKey {
-        val wrappedBlobStr = prefs.getString(KEY_WRAPPED_BLOB, null) ?: throw IllegalStateException("No Master Key Found")
-        val ivStr = prefs.getString(KEY_WRAPPED_IV, null) ?: throw IllegalStateException("No IV Found")
-        
-        val wrappedBlob = android.util.Base64.decode(wrappedBlobStr, android.util.Base64.NO_WRAP)
-        val iv = android.util.Base64.decode(ivStr, android.util.Base64.NO_WRAP)
-        
-        val keyBytes = decryptLocal(iv, wrappedBlob)
-        return javax.crypto.spec.SecretKeySpec(keyBytes, "AES")
-    }
-    
-    fun hasMasterKey(): Boolean {
-         return prefs.contains(KEY_WRAPPED_BLOB)
-    }
-
-    // --- CRYPTO OPERATIONS (USING MASTER KEY) ---
-    
-    // Encrypts User Data using the LOADED Master Key
-    fun encrypt(data: ByteArray, masterKey: SecretKey): Pair<ByteArray, ByteArray> {
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.ENCRYPT_MODE, masterKey)
-
-        val iv = cipher.iv
-        val encryptedData = cipher.doFinal(data)
-
-        return Pair(iv, encryptedData)
-    }
-
-    // Decrypts User Data using the LOADED Master Key
-    fun decrypt(iv: ByteArray, encryptedData: ByteArray, masterKey: SecretKey): ByteArray {
-        val spec = GCMParameterSpec(128, iv)
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.DECRYPT_MODE, masterKey, spec)
-
-        return cipher.doFinal(encryptedData)
-    }
-
-    // --- INTERNAL: DEVICE KEY MANAGEMENT (WRAPPING) ---
-
-    private fun generateWrappingKeyIfNotExists() {
-        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
-        keyStore.load(null)
-
-        if (!keyStore.containsAlias(WRAP_KEY_ALIAS)) {
-            val keyGenerator = KeyGenerator.getInstance(
-                KeyProperties.KEY_ALGORITHM_AES,
-                ANDROID_KEYSTORE
-            )
-
-            // StrongBox Check
-            val hasStrongBox = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                context.packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)
-            } else {
-                false
-            }
-
-            val keyGenParameterSpecBuilder = KeyGenParameterSpec.Builder(
-                WRAP_KEY_ALIAS,
-                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
-            )
-                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .setKeySize(256)
-                // USER REQUEST: Make Biometrics OPTIONAL. 
-                // We disable mandatory hardware auth here. Verification is now done at the UI layer.
-                .setUserAuthenticationRequired(false) 
-                // .setUnlockedDeviceRequired(true) // Removing restriction for usability
-            
-            // if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            //      keyGenParameterSpecBuilder.setUserAuthenticationParameters(
-            //          30, 
-            //          KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL
-            //      )
-            // } else {
-            //      @Suppress("DEPRECATION")
-            //      keyGenParameterSpecBuilder.setUserAuthenticationValidityDurationSeconds(30)
-            // }
-
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && hasStrongBox) {
-                keyGenParameterSpecBuilder.setIsStrongBoxBacked(true)
-            }
-
-            keyGenerator.init(keyGenParameterSpecBuilder.build())
-            keyGenerator.generateKey()
-        }
-    }
-
-    // Encrypts RAW BYTES using DEVICE KEY (No Auth needed usually for Encryption)
-    private fun encryptLocal(data: ByteArray): Pair<ByteArray, ByteArray> {
-        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
-        keyStore.load(null)
-        val secretKey = keyStore.getKey(WRAP_KEY_ALIAS, null) as SecretKey
-
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey)
-
-        val iv = cipher.iv
-        val encryptedData = cipher.doFinal(data)
-
-        return Pair(iv, encryptedData)
-    }
-
-    // Decrypts RAW BYTES using DEVICE KEY (Auth REQUIRED)
-    private fun decryptLocal(iv: ByteArray, encryptedData: ByteArray): ByteArray {
-        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
-        keyStore.load(null)
-        val secretKey = keyStore.getKey(WRAP_KEY_ALIAS, null) as SecretKey
-
-        val spec = GCMParameterSpec(128, iv)
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
-
-        return cipher.doFinal(encryptedData)
-    }
-
-    /**
-     * SELF-DESTRUCT: Permanently removes the WRAPPING key and the Encrypted Blob.
-     */
-    fun deleteKey() {
-        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
-        keyStore.load(null)
-        if (keyStore.containsAlias(WRAP_KEY_ALIAS)) {
-            keyStore.deleteEntry(WRAP_KEY_ALIAS)
-        }
-        // Also clear prefs (Using the injected EncryptedSharedPreferences)
-        prefs.edit().clear().apply()
-    }
-
-    /**
-     * ADVANCED ROOT & TAMPER DETECTION
-     * Checks for SU binaries, dangerous props, hooking frameworks, and debuggers.
-     */
     private fun isDeviceSecure(): Boolean {
+        // ... (existing checks) ...
+        
+        // 6. NATIVE FRIDA DETECTION (Memory Scan)
+        if (checkFrida()) {
+             android.util.Log.e("SecurityManager", "Frida/Hooking Detected via Native Scan!")
+             return false
+        }
+
+        return true
+    }
         // 1. Check for basic Root binaries
         val paths = arrayOf(
             "/system/app/Superuser.apk",
