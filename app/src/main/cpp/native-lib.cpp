@@ -1,3 +1,5 @@
+#include <jni.h>
+#include <string>
 #include <fstream>
 
 // Obfuscated Secrets (XOR Key: 0x7F)
