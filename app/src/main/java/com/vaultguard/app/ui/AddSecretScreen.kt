@@ -115,7 +115,7 @@ fun AddSecretScreen(
         onClick = {
             if (title.isNotEmpty() && password.isNotEmpty()) {
                 isSaving = true
-                viewModel.saveSecret(title, username, "$username|$password")
+                viewModel.saveSecret(title, username, password)
             }
         },
                 enabled = !isSaving && title.isNotEmpty() && password.isNotEmpty(),
