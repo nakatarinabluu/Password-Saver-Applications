@@ -88,8 +88,10 @@ class SecurityManager(private val context: Context, private val prefs: SharedPre
                     Log.e(TAG, "FATAL: Signature Mismatch! App may be tampered.")
                     deleteKey() // Nuke data
                     exitApp()
-                } else {
-                    Log.w(TAG, "Signature Mismatch (Allowed in Debug Mode).")
+                }
+                // Debug mode allowed mismatch silently or with obscure log
+                if (isDebuggable) {
+                     // No-op or minimal log
                 }
             }
         } catch (e: Exception) {
