@@ -134,13 +134,7 @@ fun VaultDashboard(
                         Text("Sign Out", color = Color.Red)
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-                    TextButton(
-                        onClick = { onSignOut() },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Sign Out", color = Color.Red)
-                    }
+
                 }
             },
             confirmButton = {
