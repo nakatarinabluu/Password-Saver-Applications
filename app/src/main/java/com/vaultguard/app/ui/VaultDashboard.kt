@@ -50,6 +50,9 @@ fun VaultDashboard(
                 
                 // 3. Force Garbage Collection to remove artifacts
                 System.gc()
+            } else if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                // RELOAD: If returning to foreground, ensure data is present
+                viewModel.loadSecrets()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)

@@ -93,7 +93,7 @@ fun ZeroKeepApp(isSetupComplete: Boolean, prefs: android.content.SharedPreferenc
         composable("auth") {
             AuthScreen(
                 onAuthenticated = {
-                    navController.navigate("dashboard") {
+                    navController.navigate("secret_graph") {
                         popUpTo("auth") { inclusive = true }
                     }
                 },
@@ -104,21 +104,37 @@ fun ZeroKeepApp(isSetupComplete: Boolean, prefs: android.content.SharedPreferenc
                 }
             )
         }
-        composable("dashboard") {
-            VaultDashboard(
-                onAddSecretClick = { navController.navigate("add_secret") },
-                onSignOut = {
-                    navController.navigate("auth") {
-                        popUpTo("dashboard") { inclusive = true }
-                    }
-                }
-            )
-        }
-        composable("add_secret") {
-            AddSecretScreen(
-                onBack = { navController.popBackStack() },
-                onSaved = { navController.popBackStack() }
-            )
+        // Shared Graph for Secret Management
+        androidx.navigation.compose.navigation(startDestination = "dashboard", route = "secret_graph") {
+            composable("dashboard") { entry ->
+                // Scope ViewModel to the graph
+                val parentEntry = remember(entry) { navController.getBackStackEntry("secret_graph") }
+                val secretViewModel = hiltViewModel<com.vaultguard.app.ui.secret.SecretViewModel>(parentEntry)
+                
+                VaultDashboard(
+                    onAddSecretClick = { navController.navigate("add_secret") },
+                    onSignOut = {
+                        navController.navigate("auth") {
+                            popUpTo("secret_graph") { inclusive = true }
+                        }
+                    },
+                    viewModel = secretViewModel // Pass shared instance
+                )
+            }
+            composable("add_secret") { entry ->
+                // Scope ViewModel to the graph
+                val parentEntry = remember(entry) { navController.getBackStackEntry("secret_graph") }
+                val secretViewModel = hiltViewModel<com.vaultguard.app.ui.secret.SecretViewModel>(parentEntry)
+                
+                AddSecretScreen(
+                    onBack = { navController.popBackStack() },
+                    onSaved = { 
+                        // ViewModel already refreshed list internally via saveSecret -> loadSecrets
+                        navController.popBackStack() 
+                    },
+                    viewModel = secretViewModel // Pass shared instance
+                )
+            }
         }
     }
 }
