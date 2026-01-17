@@ -30,7 +30,7 @@ import com.vaultguard.app.BuildConfig
 object NetworkModule {
 
     private const val NATIVE_LIB = "vaultguard"
-    private const val USER_AGENT_CHROME = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    private const val USER_AGENT_CHROME = "ZeroKeep-Android/1.0"
     private const val TIMEOUT_SECONDS = 30L
 
     init {
