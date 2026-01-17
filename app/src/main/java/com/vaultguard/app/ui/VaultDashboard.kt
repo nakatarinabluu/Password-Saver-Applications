@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -204,7 +205,7 @@ fun VaultDashboard(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface), // Use Surface Color
                 actions = {
                     IconButton(onClick = { viewModel.loadSecrets() }) {
-                        Icon(androidx.compose.material.icons.Icons.Filled.Refresh, contentDescription = "Refresh", tint = MaterialTheme.colorScheme.onSurface)
+                        Icon(Icons.Filled.Refresh, contentDescription = "Refresh", tint = MaterialTheme.colorScheme.onSurface)
                     }
                     IconButton(onClick = { showSettings = true }) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onSurface)
