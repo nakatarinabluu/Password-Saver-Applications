@@ -160,7 +160,7 @@ class SecretViewModel @Inject constructor(
                 if (result.isSuccess) {
                     loadSecrets() // Refresh list
                 } else {
-                     android.util.Log.e("SecretViewModel", "Delete failed")
+                     android.util.Log.e("SecretViewModel", "Delete failed", result.exceptionOrNull())
                 }
             } catch (e: Exception) {
                  android.util.Log.e("SecretViewModel", "Delete error", e)

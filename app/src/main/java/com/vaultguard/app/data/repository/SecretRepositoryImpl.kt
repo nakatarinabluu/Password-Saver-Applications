@@ -55,7 +55,9 @@ class SecretRepositoryImpl @Inject constructor(
             if (response.isSuccessful) {
                 Result.success(Unit)
             } else {
-                Result.failure(IOException("Error: ${response.code()}"))
+                val errorBody = response.errorBody()?.string()
+                android.util.Log.e("SecretRepo", "Delete failed: ${response.code()} Body: $errorBody")
+                Result.failure(IOException("Error: ${response.code()} $errorBody"))
             }
         } catch (e: Exception) {
             Result.failure(e)
