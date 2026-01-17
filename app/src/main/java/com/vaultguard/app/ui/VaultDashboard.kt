@@ -203,6 +203,9 @@ fun VaultDashboard(
                 title = { Text("ZeroKeep", color = MaterialTheme.colorScheme.onSurface) }, // Dark Text on Surface
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface), // Use Surface Color
                 actions = {
+                    IconButton(onClick = { viewModel.loadSecrets() }) {
+                        Icon(androidx.compose.material.icons.Icons.Filled.Refresh, contentDescription = "Refresh", tint = MaterialTheme.colorScheme.onSurface)
+                    }
                     IconButton(onClick = { showSettings = true }) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onSurface)
                     }

@@ -100,6 +100,10 @@ class SecretViewModel @Inject constructor(
                     }
                     _secrets.value = decryptedList
                 }
+                result.onFailure { e ->
+                    android.util.Log.e("SecretViewModel", "Fetch failed", e)
+                    // TODO: Expose error to UI
+                }
             } catch (e: Exception) {
                  // Auth failed or Key missing
                  android.util.Log.e("SecretViewModel", "Failed to load secrets (Auth/Key)", e)
