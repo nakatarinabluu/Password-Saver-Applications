@@ -8,6 +8,9 @@
         
         <item name="colorPrimary">@color/accent_blue</item>
         <item name="colorOnPrimary">@color/surface_white</item>
-        <item name="android:windowBackground">@color/background_light</item>
+        <!-- Chameleon Trick: Set window background to Icon Blue to hide the square box -->
+        <item name="android:windowBackground">@color/brand_royal_blue</item>
+        <!-- Android 12+ Splash API -->
+        <item name="android:windowSplashScreenBackground">@color/brand_royal_blue</item>
     </style>
 </resources>

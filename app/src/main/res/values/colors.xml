@@ -4,15 +4,15 @@
     <color name="white">#FFFFFFFF</color>
     
     <!-- Trust Theme: Deep Blue & Silver -->
-    <!-- Swiss Minimal Theme -->
-    <!-- Obsidian Theme (Matching Compose) -->
+    <!-- Azure Professional Theme -->
     <color name="primary_text">#FFFFFFFF</color>
     <color name="secondary_text">#FFB0BEC5</color>
-    <color name="background_light">#FF102027</color> <!-- Force Dark Background -->
-    <color name="surface_white">#FF1E1E1E</color>
-    <color name="accent_blue">#FF2979FF</color> <!-- Electric Blue -->
+    <color name="background_light">#FF0A1929</color> <!-- Deep Navy Background -->
+    <color name="surface_white">#FF132F4C</color> <!-- Navy Surface -->
+    <color name="accent_blue">#FF1565C0</color> <!-- Royal Blue -->
+    <color name="brand_royal_blue">#FF1565C0</color> <!-- Royal Blue for Splash -->
     
     <!-- Semantic Colors -->
-    <color name="error_red">#FFD50000</color>
-    <color name="success_green">#FF00E5FF</color> <!-- Neon Cyan for success/secondary -->
+    <color name="error_red">#FFEF5350</color>
+    <color name="success_green">#FF66BB6A</color>
 </resources>
