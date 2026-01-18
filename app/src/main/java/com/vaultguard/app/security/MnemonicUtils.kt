@@ -228,6 +228,7 @@ object MnemonicUtils {
         val factory = javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
         val spec = javax.crypto.spec.PBEKeySpec(mnemonicString.toCharArray(), salt, iterations, keyLength)
         val secretKey = factory.generateSecret(spec)
+        spec.clearPassword() // CRITICAL: Wipe sensitive char array from memory
         
         return javax.crypto.spec.SecretKeySpec(secretKey.encoded, "AES")
     }

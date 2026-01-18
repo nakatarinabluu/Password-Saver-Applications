@@ -15,6 +15,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val securityManager: SecurityManager,
+    private val kdfGenerator: com.vaultguard.app.security.KdfGenerator,
     @ApplicationContext private val context: Context,
     private val prefs: android.content.SharedPreferences
 ) : ViewModel() {
@@ -26,12 +27,36 @@ class AuthViewModel @Inject constructor(
     private val MAX_ATTEMPTS = 7
 
     fun attemptUnlock(password: String) {
-        // Default to "password123" only if not set (backward compatibility)
-        // Default to "password123" only if not set (backward compatibility)
-        val validPassword = prefs.getString("master_password", null) ?: return // Fail safely if no password set
+        val storedHash = prefs.getString("master_password_hash", null)
+        val legacyPassword = prefs.getString("master_password", null)
         val duressPassword = prefs.getString("duress_password", null)
 
-        if (password == validPassword) {
+        var isSuccess = false
+
+        if (storedHash != null) {
+            // New Secure Flow
+            if (kdfGenerator.verifyPassword(password, storedHash)) {
+                isSuccess = true
+            }
+        } else if (legacyPassword != null) {
+            // Migration Flow (Temporary) - One-time auto-migration could happen here,
+            // but for now we just allow unlock if they match, then we should re-save as hash?
+            // Safer to just allow unlock and let them re-auth or re-setup.
+            // Actually, let's just support it for now to avoid lockout during dev.
+            if (password == legacyPassword) {
+                 isSuccess = true
+                 // Auto-migrate
+                 viewModelScope.launch {
+                     val newHash = kdfGenerator.hashPassword(password)
+                     prefs.edit().putString("master_password_hash", newHash).remove("master_password").apply()
+                 }
+            }
+        } else {
+             // No password set?
+             return
+        }
+
+        if (isSuccess) {
             attempts = 0
             _authState.value = AuthState.Success
         } else if (duressPassword != null && password == duressPassword) {
@@ -46,6 +71,7 @@ class AuthViewModel @Inject constructor(
             // 3. Set Success (Unlock)
             // The Dashboard will try to load secrets, fail to decrypt (no key), and show empty list.
             _authState.value = AuthState.Success
+
         } else {
             attempts++
             if (attempts >= MAX_ATTEMPTS) {

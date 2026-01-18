@@ -32,6 +32,9 @@ class MainActivity : FragmentActivity() {
     @javax.inject.Inject
     lateinit var clipboardManager: com.vaultguard.app.utils.ClipboardManager
 
+    @javax.inject.Inject
+    lateinit var kdfGenerator: com.vaultguard.app.security.KdfGenerator
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -75,10 +78,13 @@ fun ZeroKeepApp(isSetupComplete: Boolean, prefs: android.content.SharedPreferenc
 
             SetupScreen(onSetupComplete = { password ->
                 
-                // Save MASTER PASSWORD
+                // Save MASTER PASSWORD HASH (Zero Knowledge)
+                val passwordHash = kdfGenerator.hashPassword(password)
+                
                 val editor = prefs.edit()
                     .putBoolean("is_setup_complete", true)
-                    .putString("master_password", password)
+                    .putString("master_password_hash", passwordHash)
+                    .remove("master_password") // Security: Migrate old plaintext password if exists
                     .remove("duress_password") // Clear any old duress password (setup now excludes it)
 
                 editor.apply()

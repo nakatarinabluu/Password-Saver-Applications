@@ -42,4 +42,33 @@ class KdfGenerator @Inject constructor() {
         SecureRandom().nextBytes(salt)
         return salt
     }
+
+    /**
+     * Hashes a password using Argon2id.
+     * Returns the full encoded string (PHC format) containing salt, params, and hash.
+     */
+    fun hashPassword(password: String): String {
+        val salt = generateSalt()
+        val result = argon2.hash(
+            mode = Argon2Mode.ARGON2_ID,
+            password = password.toByteArray(Charsets.UTF_8),
+            salt = salt,
+            tCostInIterations = ITERATIONS,
+            mCostInKibibyte = MEMORY,
+            parallelism = PARALLELISM,
+            hashLengthInBytes = KEY_LENGTH
+        )
+        return result.encodedOutputAsString()
+    }
+
+    /**
+     * Verifies a password against a stored Argon2id hash.
+     */
+    fun verifyPassword(password: String, encodedHash: String): Boolean {
+        return argon2.verify(
+            mode = Argon2Mode.ARGON2_ID,
+            encodedHash = encodedHash,
+            password = password.toByteArray(Charsets.UTF_8)
+        )
+    }
 }
