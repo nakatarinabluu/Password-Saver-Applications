@@ -237,8 +237,6 @@ class SecretViewModel @Inject constructor(
         }
         return data
     }
-}
-
     private fun migrateLegacyData(legacyList: List<com.vaultguard.app.domain.model.Secret>, masterKey: javax.crypto.SecretKey, newOwnerHash: String) {
         viewModelScope.launch {
             var migratedCount = 0
