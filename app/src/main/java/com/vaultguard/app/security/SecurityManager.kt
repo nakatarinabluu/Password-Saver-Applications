@@ -15,6 +15,7 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import kotlin.system.exitProcess
+import com.vaultguard.app.BuildConfig
 
 /**
  * Core Security Module for VaultGuard.
@@ -81,9 +82,7 @@ class SecurityManager(private val context: Context, private val prefs: SharedPre
             val currentHash = getComputedSignatureHash()
             val expectedSignature = getAppSignature() // From JNI
 
-import com.vaultguard.app.BuildConfig
 
-// ... inside verifyAppSignature
             if (currentHash != expectedSignature) {
                 if (!BuildConfig.DEBUG) {
                     Log.e(TAG, "FATAL: Signature Mismatch! App may be tampered.")
