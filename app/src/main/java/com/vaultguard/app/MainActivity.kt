@@ -54,7 +54,7 @@ class MainActivity : FragmentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val isSetupComplete = prefs.getBoolean("is_setup_complete", false)
-                    ZeroKeepApp(isSetupComplete, prefs)
+                    ZeroKeepApp(isSetupComplete, prefs, kdfGenerator)
                 }
             }
         }
@@ -62,7 +62,11 @@ class MainActivity : FragmentActivity() {
 }
 
 @Composable
-fun ZeroKeepApp(isSetupComplete: Boolean, prefs: android.content.SharedPreferences) {
+fun ZeroKeepApp(
+    isSetupComplete: Boolean, 
+    prefs: android.content.SharedPreferences,
+    kdfGenerator: com.vaultguard.app.security.KdfGenerator
+) {
     val navController = rememberNavController()
 
     val startDestination = if (isSetupComplete) "auth" else "setup"
