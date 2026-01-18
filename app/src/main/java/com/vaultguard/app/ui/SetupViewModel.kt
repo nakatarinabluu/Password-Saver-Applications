@@ -60,7 +60,7 @@ class SetupViewModel @Inject constructor(
                 // 4. Save Vault Identity (Multi-Account Support)
                 // We derive a unique Vault ID from the mnemonic.
                 // This allows different phrases to have different storages (No collision).
-                val vaultId = sha256(mnemonicString)
+                // val vaultId is already computed above at line 49
                 prefs.edit()
                     .putBoolean("biometrics_enabled", false)
                     .putString("vault_id", vaultId)
@@ -79,23 +79,7 @@ class SetupViewModel @Inject constructor(
      */
     private suspend fun verifyKeyAgainstServer(key: SecretKey, vaultId: String): Boolean {
         try {
-            // Use the Derived Vault ID
-            val ownerHash = vaultId // It is already hashed in call site? Or raw? 
-            // Wait, call site does `sha256(mnemonicString)`. So it is the hash.
-            // Let's verify sha256 function. Yes. the mnemonic string potentially or pass it in. 
-            // Since we don't have it here easily without passing, we should assume verifyKey is called in context.
-            // Actually, verifyKeysAgainstServer is called with key. We need the Vault ID too.
-            // Let's modify the signature or logic?
-            // Simpler: Just rely on the fact that if we are restoring, we know the mnemonic.
-            // BUT wait, this function is private and only used in one place where we HAVE the mnemonic.
-            
-             // Temporary Fix: See Note below. 
-             // To avoid changing signature significantly in this small edit: 
-             // Logic moved to call site? No, let's keep it here but use the passed mnemonic? 
-             // AHH, I can't access mnemonic here easily. 
-             // I will change the signature of verifyKeyAgainstServer to accept vaultId.
-             return false // Placeholder to trigger re-read/edit in "multi_replace" approach
-        } catch (e: Exception) {
+            val ownerHash = vaultId
 
             val result = repository.fetchSecrets(ownerHash)
             return result.fold(
@@ -109,7 +93,6 @@ class SetupViewModel @Inject constructor(
                         val encrypted = hexStringToByteArray(sample.encryptedBlob)
                         
                         // If this throws or returns garbage, decryption failed.
-                        // However, GCM usually throws AEADBadTagException if key is wrong.
                         securityManager.decrypt(iv, encrypted, key)
                         return true
                     } catch (e: Exception) {
@@ -117,11 +100,8 @@ class SetupViewModel @Inject constructor(
                     }
                 },
                 onFailure = { 
-                    // Network error? Assume valid to let user in, OR block?
-                    // Safe default: Block if we cant verify? Or Warn?
-                    // User said "Cant Login", so strict mode implies we must verify.
-                    // But if offline, this bricks the app. 
-                    // Let's assume network is required for Restore.
+                    // Network error or other issue
+                    // strict mode implies we must verify.
                     return false 
                 }
             )
