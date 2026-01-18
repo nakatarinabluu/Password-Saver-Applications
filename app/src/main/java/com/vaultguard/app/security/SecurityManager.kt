@@ -90,7 +90,12 @@ import com.vaultguard.app.BuildConfig
                     deleteKey() // Nuke data
                     exitApp()
                 } else {
-                    Log.w(TAG, "Signature Mismatch detected but ignored in DEBUG mode.")
+                    val msg = "DEBUG: Signature Mismatch Detected (Security Check Skipped)"
+                    Log.w(TAG, msg)
+                    // Show visual log to user as requested
+                    android.os.Handler(android.os.Looper.getMainLooper()).post {
+                        android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
+                    }
                 }
             }
         } catch (e: Exception) {
