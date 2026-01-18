@@ -104,7 +104,7 @@ fun WelcomeContent(onNewWallet: () -> Unit, onRestoreWallet: () -> Unit) {
             contentAlignment = Alignment.Center
         ) {
              Icon(
-                painter = androidx.compose.ui.res.painterResource(id = com.vaultguard.app.R.mipmap.ic_launcher),
+                painter = androidx.compose.ui.res.painterResource(id = com.vaultguard.app.R.drawable.ic_launcher_foreground),
                 contentDescription = null,
                 tint = Color.Unspecified,
                 modifier = Modifier.size(120.dp) // Fill the box
