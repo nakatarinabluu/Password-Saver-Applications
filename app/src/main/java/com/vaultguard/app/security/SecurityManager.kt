@@ -66,7 +66,15 @@ class SecurityManager(private val context: Context, private val prefs: SharedPre
         }
         
         if (!isDeviceSecure()) {
-            throw SecurityException("Device integrity check failed. Environment is compromised.")
+            if (BuildConfig.DEBUG) {
+                 val msg = "DEBUG: Device Integrity Check Failed (Emulator/Root detected) - Ignored"
+                 Log.w(TAG, msg)
+                 android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
+                 }
+            } else {
+                throw SecurityException("Device integrity check failed. Environment is compromised.")
+            }
         }
         
         verifyAppSignature()
