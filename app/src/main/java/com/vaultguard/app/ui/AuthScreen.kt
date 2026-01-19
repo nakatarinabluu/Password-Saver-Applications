@@ -84,9 +84,11 @@ fun AuthScreen(
     
     // Trigger Biometrics ONCE on start (IF ENABLED and NOT skipped)
     LaunchedEffect(Unit) {
-        if (viewModel.isBiometricEnabled && viewModel.shouldAutoPromptBiometrics) {
-            triggerBiometrics()
-        }
+        // Disabled auto-trigger to prevent "Logout Loop" issue reported by user.
+        // User must explicitly click the Biometric button to login.
+        // if (viewModel.isBiometricEnabled && viewModel.shouldAutoPromptBiometrics) {
+        //     triggerBiometrics()
+        // }
     }
 
     Box(

@@ -151,14 +151,17 @@ fun VaultDashboard(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("ZeroKeep", color = MaterialTheme.colorScheme.onSurface) }, // Dark Text on Surface
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface), // Use Surface Color
+                title = { Text("ZeroKeep", color = Color(0xFFF1F5F9)) }, // White Title
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF1E293B), // Dark Slate
+                    actionIconContentColor = Color(0xFFF1F5F9) // White Icons
+                ), 
                 actions = {
                     IconButton(onClick = { viewModel.loadSecrets() }) {
-                        Icon(Icons.Filled.Refresh, contentDescription = "Refresh", tint = MaterialTheme.colorScheme.onSurface)
+                        Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
                     }
                     IconButton(onClick = { showSettings = true }) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onSurface)
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
                 }
             )
@@ -240,8 +243,8 @@ fun SecretItem(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete Secret?") },
-            text = { Text("Are you sure you want to delete '${item.title}'?", color = MaterialTheme.colorScheme.onSurface) },
+            title = { Text("Delete Secret?", color = Color.White) },
+            text = { Text("Are you sure you want to delete '${item.title}'?", color = Color(0xFFE2E8F0)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -249,15 +252,15 @@ fun SecretItem(
                         showDeleteConfirm = false
                     }
                 ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text("Delete", color = Color(0xFFEF4444))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancel")
+                    Text("Cancel", color = Color(0xFF94A3B8))
                 }
             },
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = Color(0xFF1E293B) // Dark Slate
         )
     }
 

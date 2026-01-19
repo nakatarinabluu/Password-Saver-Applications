@@ -340,10 +340,13 @@ fun SetupForm(
                 }
             },
             colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = MaterialTheme.colorScheme.onBackground,
-                unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedBorderColor = Color(0xFF3B82F6),
+                unfocusedBorderColor = Color(0xFF475569),
+                cursorColor = Color(0xFF3B82F6),
+                focusedLabelColor = Color(0xFF3B82F6),
+                unfocusedLabelColor = Color(0xFF94A3B8)
             ),
             shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth()
@@ -355,19 +358,33 @@ fun SetupForm(
         if (!isRestore) {
             OutlinedTextField(
                 value = confirmPassword,
-                onValueChange = { confirmPassword = it },
-                label = { Text("Re-enter to Confirm") },
+                onValueChange = { 
+                    confirmPassword = it
+                    passwordMismatch = masterPassword != it
+                },
+                label = { Text("Re-enter to Confirm", color = Color(0xFF94A3B8)) },
                 singleLine = true,
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    focusedBorderColor = if (passwordMismatch) Color(0xFFEF4444) else Color(0xFF3B82F6),
+                    unfocusedBorderColor = Color(0xFF475569),
+                    cursorColor = Color(0xFF3B82F6),
+                    focusedLabelColor = if (passwordMismatch) Color(0xFFEF4444) else Color(0xFF3B82F6),
+                    unfocusedLabelColor = Color(0xFF94A3B8)
                 ),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth()
             )
+            if (passwordMismatch) {
+                Text(
+                    text = "Passwords do not match",
+                    color = Color(0xFFEF4444),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                )
+            }
             Spacer(modifier = Modifier.height(24.dp))
         } else {
              Spacer(modifier = Modifier.height(24.dp))
@@ -378,9 +395,9 @@ fun SetupForm(
             onClick = {
                 if (isRestore && recoveryInput.split("\\s+".toRegex()).size != 12) {
                      displayError = "Please enter exactly 12 words."
-                } else if (password.length < 6) {
+                } else if (masterPassword.length < 6) {
                     displayError = "Password must be at least 6 characters"
-                } else if (!isRestore && password != confirmPassword) {
+                } else if (!isRestore && masterPassword != confirmPassword) {
                     displayError = "Passwords do not match!"
                 } else {
                     // Start Verification Flow
