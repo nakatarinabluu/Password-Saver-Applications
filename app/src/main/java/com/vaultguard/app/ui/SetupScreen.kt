@@ -12,20 +12,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.vaultguard.app.security.MnemonicUtils
 
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.core.*
 
@@ -193,22 +188,21 @@ fun RestoreWalletContent(onSetupComplete: (String) -> Unit, onBack: () -> Unit) 
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun SetupForm(
-    title: String,
-    instruction: String,
+fun SetupFormContent(
     mnemonic: List<String>?,
     onRegenerateMnemonic: () -> Unit,
     isRestore: Boolean,
     onSetupComplete: (String) -> Unit,
     onBack: () -> Unit,
-    viewModel: SetupViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+    viewModel: SetupViewModel = hiltViewModel()
 ) {
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var recoveryInput by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    var passwordMismatch by remember { mutableStateOf(false) } // Added state
+    var passwordMismatch by remember { mutableStateOf(false) }
     
     // State Observation
     val setupState by viewModel.setupState.collectAsState()
@@ -223,22 +217,6 @@ fun SetupForm(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(24.dp)
-            .verticalScroll(androidx.compose.foundation.rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // ... Header ...
-        // Header with Back Button
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
                     tint = MaterialTheme.colorScheme.onBackground
