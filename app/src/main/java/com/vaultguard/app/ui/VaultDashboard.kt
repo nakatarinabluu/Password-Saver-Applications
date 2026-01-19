@@ -20,10 +20,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.vaultguard.app.ui.theme.BrandPurple
+import com.vaultguard.app.ui.theme.BrandBlue
+import com.vaultguard.app.ui.theme.BackgroundLight
 
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vaultguard.app.ui.secret.SecretViewModel
 import com.vaultguard.app.ui.secret.SecretUiModel
+import com.vaultguard.app.ui.secret.SecretState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,7 +37,15 @@ fun VaultDashboard(
     viewModel: SecretViewModel = hiltViewModel()
 ) {
     // Real Data
-    val secrets by viewModel.secrets.collectAsState()
+    val state by viewModel.state.collectAsState()
+    
+    val secrets = when (val s = state) {
+        is SecretState.Success -> s.secrets
+        else -> emptyList()
+    }
+    
+    val isLoading = state is SecretState.Loading
+    
     var showSettings by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
     // Injected/Instantiated Utils

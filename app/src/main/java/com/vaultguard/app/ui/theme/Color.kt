@@ -43,3 +43,7 @@ val DangerRed = Color(0xFFDC2626)         // Professional Red (Alerts)
 val SuccessGreen = Color(0xFF16A34A)      // Professional Green (Success)
 val WarningAmber = Color(0xFFD97706)      // Professional Amber (Warning)
 
+// Missing Brand Colors
+val MidnightBlue = Color(0xFF020617)      // Deep Executive Blue
+val RoyalBlue = Color(0xFF2563EB)         // Rich Interaction Blue
+

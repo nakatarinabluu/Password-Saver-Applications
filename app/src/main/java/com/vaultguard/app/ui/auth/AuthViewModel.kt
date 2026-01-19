@@ -121,6 +121,7 @@ class AuthViewModel @Inject constructor(
 
 sealed class AuthState {
     object Idle : AuthState()
+    object Loading : AuthState()
     object Success : AuthState()
     data class Error(val attemptsUsed: Int) : AuthState()
     data class Wiped(val reason: String) : AuthState()

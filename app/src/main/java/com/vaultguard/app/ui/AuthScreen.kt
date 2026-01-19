@@ -9,17 +9,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vaultguard.app.R
 import com.vaultguard.app.ui.auth.AuthState
 import com.vaultguard.app.ui.auth.AuthViewModel
-import com.vaultguard.app.ui.components.VaultButton
-import com.vaultguard.app.ui.components.VaultTextField
 
 @Composable
 fun AuthScreen(
@@ -37,6 +40,7 @@ fun AuthScreen(
     }
     
     val isError = attempts > 0
+    val isLoading = authState is AuthState.Loading
     
     val context = androidx.compose.ui.platform.LocalContext.current
     
@@ -57,59 +61,87 @@ fun AuthScreen(
             ),
         contentAlignment = Alignment.Center
     ) {
-        // Login Card
-        Card(
+        Column(
             modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .padding(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
+                .align(Alignment.Center)
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
+            // Icon
+            Icon(
+                imageVector = Icons.Filled.Lock,
+                contentDescription = null,
+                tint = Color.White,
                 modifier = Modifier
-                    .padding(32.dp)
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .size(80.dp)
+                    .padding(bottom = 24.dp)
+            )
+            
+            Text(
+                text = "Welcome Back",
+                style = MaterialTheme.typography.headlineMedium,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+            
+            Text(
+                text = "Enter your master password to unlock.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color(0xFFE2E8F0),
+                modifier = Modifier.padding(top = 8.dp, bottom = 32.dp),
+                textAlign = TextAlign.Center
+            )
+
+            // Password Field
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Master Password") },
+                singleLine = true,
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                   val image = if (passwordVisible)
+                       Icons.Filled.Visibility
+                   else
+                       Icons.Filled.VisibilityOff
+
+                   IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                       Icon(imageVector = image, contentDescription = if (passwordVisible) "Hide password" else "Show password")
+                   }
+                },
+                isError = isError,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color.White.copy(alpha = 0.9f),
+                    unfocusedContainerColor = Color.White.copy(alpha = 0.8f),
+                    errorContainerColor = Color.White.copy(alpha = 0.9f),
+                    focusedBorderColor = Color.White,
+                    unfocusedBorderColor = Color.Transparent
+                ),
+                modifier = Modifier.fillMaxWidth()
+            )
+            
+            if (isError) {
+                Text(
+                    text = "Incorrect password. Attempts remaining: ${7 - attempts}",
+                    color = Color(0xFFEF4444),
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = { viewModel.attemptUnlock(password) },
+                enabled = !isLoading && password.isNotEmpty(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = com.vaultguard.app.ui.theme.BrandPurple
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
             ) {
-                // Logo / Icon
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .background(com.vaultguard.app.ui.theme.BackgroundLight, androidx.compose.foundation.shape.CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Default.Lock,
-                        contentDescription = null,
-                        tint = com.vaultguard.app.ui.theme.BrandPurple,
-                        modifier = Modifier.size(40.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = "Welcome Back",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = com.vaultguard.app.ui.theme.TextPrimary
-                )
-                
-                Text(
-                    text = "Enter your master password to unlock.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = com.vaultguard.app.ui.theme.TextSecondary,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Password Field
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text("Master Password") },
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(

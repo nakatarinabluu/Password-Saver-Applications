@@ -22,34 +22,44 @@ private val DarkColorScheme = darkColorScheme(
     primaryContainer = RoyalBlue, // For FABs or Highlights
     onPrimaryContainer = Color.White,
     
-    secondary = SlateGray,
-    onSecondary = Color.White,
-    
-    primary = BrandPurple,
     secondary = BrandBlue,
-    tertiary = Pink80,
-    background = BrandDark,
-    surface = Color(0xFF334155), // Slate-700
-    onPrimary = Color.White,
     onSecondary = Color.White,
+    secondaryContainer = SlateGray,
+    onSecondaryContainer = Color.White,
+    
+    tertiary = Pink80,
     onTertiary = Color.White,
-    onBackground = Color(0xFFF8FAFC),
-    onSurface = Color(0xFFF8FAFC),
+    
+    background = DarkBackground,
+    onBackground = DarkTextPrimary,
+    
+    surface = DarkSurface,
+    onSurface = DarkTextPrimary,
+    
+    error = AccentError,
+    onError = Color.White
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = BrandPurple,
-    secondary = BrandBlue,
-    tertiary = Pink40,
-    background = BackgroundLight,
-    surface = SurfaceWhite,
     onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = TextPrimary,
-    onSurface = TextPrimary,
     primaryContainer = BrandPurple,
-    onPrimaryContainer = Color.White
+    onPrimaryContainer = Color.White,
+
+    secondary = BrandBlue,
+    onSecondary = Color.White,
+    
+    tertiary = Pink40,
+    onTertiary = Color.White,
+    
+    background = BackgroundLight,
+    onBackground = TextPrimary,
+    
+    surface = SurfaceWhite,
+    onSurface = TextPrimary,
+    
+    error = AccentError,
+    onError = Color.White
 )
 
 @Composable

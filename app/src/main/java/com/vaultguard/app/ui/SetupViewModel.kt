@@ -110,6 +110,15 @@ class SetupViewModel @Inject constructor(
         }
     }
 
+    // --- Helper Methods for UI ---
+    fun createVault(password: String, mnemonic: List<String>) {
+        completeSetup(password, mnemonic, isRestore = false)
+    }
+
+    fun restoreVault(password: String, mnemonic: List<String>) {
+        completeSetup(password, mnemonic, isRestore = true)
+    }
+
     fun resetState() {
         _setupState.value = SetupState.Idle
     }

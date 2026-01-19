@@ -32,11 +32,17 @@ class SecretViewModel @Inject constructor(
     private val _saveState = MutableStateFlow<Result<Unit>?>(null)
     val saveState: StateFlow<Result<Unit>?> = _saveState
 
-    private val _secrets = MutableStateFlow<List<SecretUiModel>>(emptyList())
-    val secrets: StateFlow<List<SecretUiModel>> = _secrets
+    // UI State Management
+    private val _secretState = MutableStateFlow<SecretState>(SecretState.Loading)
+    val state: StateFlow<SecretState> = _secretState
+
+    // Keep internal reference for updates if needed, but primary is state
+    // private val _secrets = MutableStateFlow<List<SecretUiModel>>(emptyList())
 
     fun loadSecrets() {
         viewModelScope.launch {
+            _secretState.value = SecretState.Loading
+            
             // Dynamic Vault Identity
             val ownerHash = prefs.getString("vault_id", null) ?: run {
                 // Fallback for legacy "default_user" or just fail?
@@ -49,7 +55,7 @@ class SecretViewModel @Inject constructor(
                 // LOAD MASTER KEY (Requires Auth)
                 if (!securityManager.hasMasterKey()) {
                      // Should navigate to Setup? Or handle empty state.
-                     _secrets.value = emptyList()
+                     _secretState.value = SecretState.Error("Vault Locked or Key Missing")
                      return@launch
                 }
                 
@@ -111,7 +117,8 @@ class SecretViewModel @Inject constructor(
                                 id = secret.id,
                                 title = title,
                                 username = username,
-                                password = password
+                                password = password,
+                                lastModified = secret.updatedAt
                             )
                             .also {
                                 android.util.Log.d("SecretViewModel", "Decryption success for: ${it.title} (${it.id})")
@@ -121,15 +128,15 @@ class SecretViewModel @Inject constructor(
                             null
                         }
                     }
-                    _secrets.value = decryptedList
-                }
-                result.onFailure { e ->
+                    _secretState.value = SecretState.Success(decryptedList)
+                }.onFailure { e ->
                     android.util.Log.e("SecretViewModel", "Fetch failed", e)
-                    // TODO: Expose error to UI
+                    _secretState.value = SecretState.Error("Failed to fetch secrets: ${e.message}")
                 }
             } catch (e: Exception) {
                  // Auth failed or Key missing
                  android.util.Log.e("SecretViewModel", "Failed to load secrets (Auth/Key)", e)
+                 _secretState.value = SecretState.Error("Critical Error: ${e.message}")
             }
         }
     }
