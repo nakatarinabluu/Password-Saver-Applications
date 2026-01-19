@@ -26,6 +26,12 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
@@ -335,7 +341,7 @@ fun SetupForm(
                                FlowRow(
                                    modifier = Modifier.fillMaxWidth(),
                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                   verticalArrangement = Arrangement.spacedBy(8.dp)
+                                   verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically)
                                ) {
                                    mnemonic.forEachIndexed { index, word ->
                                        AssistChip(
@@ -474,7 +480,7 @@ fun SetupForm(
                             } else {
                                 // Start Verification Flow
                                 if (isRestore) {
-                                    viewModel.restoreVault(password, recoveryInput)
+                                    viewModel.restoreVault(password, recoveryInput.trim().split("\\s+".toRegex()))
                                 } else {
                                     viewModel.createVault(password, mnemonic ?: emptyList())
                                 }

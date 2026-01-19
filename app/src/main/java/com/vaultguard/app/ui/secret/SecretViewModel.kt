@@ -13,6 +13,12 @@ import javax.inject.Inject
 
 import android.content.SharedPreferences
 
+sealed class SecretState {
+    object Loading : SecretState()
+    data class Success(val secrets: List<SecretUiModel>) : SecretState()
+    data class Error(val message: String) : SecretState()
+}
+
 @HiltViewModel
 class SecretViewModel @Inject constructor(
     private val repository: SecretRepository,
@@ -117,8 +123,7 @@ class SecretViewModel @Inject constructor(
                                 id = secret.id,
                                 title = title,
                                 username = username,
-                                password = password,
-                                lastModified = secret.updatedAt
+                                password = password
                             )
                             .also {
                                 android.util.Log.d("SecretViewModel", "Decryption success for: ${it.title} (${it.id})")
@@ -193,7 +198,7 @@ class SecretViewModel @Inject constructor(
     }
 
     fun clearSensitiveData() {
-        _secrets.value = emptyList()
+        _secretState.value = SecretState.Success(emptyList())
         _saveState.value = null
     }
 
@@ -216,7 +221,8 @@ class SecretViewModel @Inject constructor(
                 setBiometricEnabled(false)
                 
                 // 4. Clear In-Memory Data
-                _secrets.value = emptyList()
+                // 4. Clear In-Memory Data
+                _secretState.value = SecretState.Success(emptyList())
 
                 // Note: Clearing App Data via Code is tricky on Android.
             } catch (e: Exception) {

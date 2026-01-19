@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vaultguard.app.R
 import com.vaultguard.app.ui.auth.AuthState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.vaultguard.app.ui.auth.AuthViewModel
 
 @Composable
