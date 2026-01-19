@@ -150,7 +150,9 @@ fun AuthScreen(
                     unfocusedTextColor = Color.White,
                     focusedBorderColor = if (attempts > 4) Color(0xFFEF4444) else Color(0xFF3B82F6), // Red or Royal Blue
                     unfocusedBorderColor = Color(0xFF475569), // Slate-600
-                    cursorColor = Color(0xFF3B82F6)
+                    cursorColor = Color(0xFF3B82F6),
+                    focusedLabelColor = Color(0xFF3B82F6), // Brand Blue
+                    unfocusedLabelColor = Color(0xFF94A3B8) // Slate-400
                 ),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth()
