@@ -346,10 +346,6 @@ fun SecretItem(
                             style = MaterialTheme.typography.labelLarge,
                             modifier = Modifier.padding(end = 12.dp)
                         )
-import androidx.compose.material.icons.filled.Lock
-
-// ...
-
                         FilledIconButton( // Prominent Copy Button
                             onClick = {
                                 clipboardManager.copyToClipboard("Secret", item.password) // Correct method
