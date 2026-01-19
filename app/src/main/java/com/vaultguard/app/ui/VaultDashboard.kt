@@ -426,4 +426,3 @@ fun SecretCard(item: SecretUiModel, onDelete: (String) -> Unit) {
         )
     }
 }
-```
