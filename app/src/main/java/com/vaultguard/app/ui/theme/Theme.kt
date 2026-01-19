@@ -25,37 +25,31 @@ private val DarkColorScheme = darkColorScheme(
     secondary = SlateGray,
     onSecondary = Color.White,
     
-    background = DarkBackground,
-    onBackground = DarkTextPrimary,
-    
-    surface = DarkSurface,
-    onSurface = DarkTextPrimary,
-    surfaceVariant = DarkSurface, // For cards
-    onSurfaceVariant = DarkTextSecondary,
-    
-    error = DangerRed,
-    onError = Color.White
+    primary = BrandPurple,
+    secondary = BrandBlue,
+    tertiary = Pink80,
+    background = BrandDark,
+    surface = Color(0xFF334155), // Slate-700
+    onPrimary = Color.White,
+    onSecondary = Color.White,
+    onTertiary = Color.White,
+    onBackground = Color(0xFFF8FAFC),
+    onSurface = Color(0xFFF8FAFC),
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = MidnightBlue,
+    primary = BrandPurple,
+    secondary = BrandBlue,
+    tertiary = Pink40,
+    background = BackgroundLight,
+    surface = SurfaceWhite,
     onPrimary = Color.White,
-    primaryContainer = RoyalBlue,
-    onPrimaryContainer = Color.White,
-
-    secondary = SlateGray,
     onSecondary = Color.White,
-
-    background = LightBackground,
-    onBackground = LightTextPrimary,
-
-    surface = LightSurface,
-    onSurface = LightTextPrimary,
-    surfaceVariant = Color(0xFFF1F5F9), // Slightly off-white for cards
-    onSurfaceVariant = LightTextSecondary,
-
-    error = DangerRed,
-    onError = Color.White
+    onTertiary = Color.White,
+    onBackground = TextPrimary,
+    onSurface = TextPrimary,
+    primaryContainer = BrandPurple,
+    onPrimaryContainer = Color.White
 )
 
 @Composable

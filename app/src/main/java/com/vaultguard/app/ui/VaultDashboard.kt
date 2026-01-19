@@ -1,26 +1,25 @@
 package com.vaultguard.app.ui
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.animation.core.*
-import androidx.compose.ui.draw.scale
 
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vaultguard.app.ui.secret.SecretViewModel
@@ -134,225 +133,211 @@ fun VaultDashboard(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Sign Out", color = Color.Red)
+                         Text(
+                            text = "ZeroKeep",
+                            color = Color.White,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Row {
+                            IconButton(onClick = { viewModel.loadSecrets() }) {
+                                Icon(Icons.Filled.Refresh, contentDescription = "Refresh", tint = Color.White)
+                            }
+                            IconButton(onClick = { showSettings = true }) {
+                                Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White)
+                            }
+                        }
                     }
-
-
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    // Welcome / Stats
+                    Text(
+                        text = "Your Vault",
+                        color = Color.White.copy(alpha = 0.8f),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = when (state) {
+                            is SecretState.Success -> "${(state as SecretState.Success).secrets.size} Secrets Secured"
+                            else -> "Loading..."
+                        },
+                        color = Color.White,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = { showSettings = false }) {
-                    Text("Close")
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    }
+            }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("ZeroKeep", color = Color(0xFFF1F5F9)) }, // White Title
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF1E293B), // Dark Slate
-                    actionIconContentColor = Color(0xFFF1F5F9) // White Icons
-                ), 
-                actions = {
-                    IconButton(onClick = { viewModel.loadSecrets() }) {
-                        Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
+            // 2. Secret List (Overlapping the header slightly)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .offset(y = (-20).dp) // Overlap effect
+                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                    .background(BackgroundLight)
+                    .padding(horizontal = 16.dp)
+            ) {
+                when (val uiState = state) {
+                    is SecretState.Loading -> {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            CircularProgressIndicator(color = BrandBlue)
+                        }
                     }
-                    IconButton(onClick = { showSettings = true }) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    is SecretState.Success -> {
+                        LazyColumn(
+                            contentPadding = PaddingValues(top = 24.dp, bottom = 100.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            items(uiState.secrets) { secret ->
+                                SecretCard(item = secret, onDelete = { viewModel.deleteSecret(it) })
+                            }
+                        }
+                    }
+                    is SecretState.Error -> {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Text(text = uiState.message, color = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = onAddSecretClick, containerColor = MaterialTheme.colorScheme.primary) { 
-                Icon(Icons.Default.Add, contentDescription = "Add Secret", tint = MaterialTheme.colorScheme.onPrimary)
+
+                // Floating Action Button
+                FloatingActionButton(
+                    onClick = { /* TODO: Add New Secret */ },
+                    containerColor = BrandPurple,
+                    contentColor = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(bottom = 32.dp, end = 16.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Secret")
+                }
             }
         }
-    ) { padding ->
-        if (secrets.isEmpty()) {
-             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background) 
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Vault is empty. Add a secret!", color = MaterialTheme.colorScheme.onBackground.copy(alpha=0.5f))
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background) // Deep Navy Background
-                    .padding(padding)
-            ) {
-                items(secrets.size) { index ->
-                    SecretItem(
-                        item = secrets[index], 
-                        clipboardManager = customClipboardManager,
-                        onDelete = { id -> viewModel.deleteSecret(id) }
-                    )
+    }
+    
+    // Bottom Sheet for Settings (Reusing exiting logic, just restyling needed internally within SettingsContent)
+    if (showSettings) {
+        ModalBottomSheet(
+            onDismissRequest = { showSettings = false },
+            containerColor = Color.White // Clean White Sheet
+        ) {
+            // Placeholder for SettingsContent - assuming it's defined elsewhere or will be added
+            // For now, a simple column to avoid compilation errors
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Settings Content Placeholder", style = MaterialTheme.typography.headlineSmall)
+                Spacer(modifier = Modifier.height(16.dp))
+                TextButton(onClick = onLock) {
+                    Text("Lock App", color = BrandBlue)
+                }
+                TextButton(onClick = { showSettings = false }) {
+                    Text("Close", color = TextSecondary)
                 }
             }
         }
     }
 }
- 
+
 @Composable
-fun SecretItem(
-    item: SecretUiModel, 
-    clipboardManager: com.vaultguard.app.utils.ClipboardManager,
-    onDelete: (String) -> Unit
-) {
+fun SecretCard(item: SecretUiModel, onDelete: (String) -> Unit) { // Changed item type to SecretUiModel and onDelete to String
     var revealed by remember { mutableStateOf(false) }
-    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
-    var ticks by remember { mutableIntStateOf(30) } // Countdown timer
     var showDeleteConfirm by remember { mutableStateOf(false) }
-    
-    val scale by animateFloatAsState(
-        targetValue = if (revealed) 0.98f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "CardScale"
-    )
+    val clipboardManager = LocalClipboardManager.current
+    val haptic = LocalHapticFeedback.current
 
-    // RAM PURGE & CLIPBOARD CLEAR: Countdown and Auto-clear
-    if (revealed) {
-        DisposableEffect(Unit) {
-            onDispose {
-                revealed = false
-            }
-        }
-        
-        LaunchedEffect(Unit) {
-            ticks = 30
-            while (ticks > 0) {
-                kotlinx.coroutines.delay(1000)
-                ticks--
-            }
-            revealed = false
-            System.gc()
-        }
-    }
-    
-    if (showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete Secret?", color = Color.White) },
-            text = { Text("Are you sure you want to delete '${item.title}'?", color = Color(0xFFE2E8F0)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDelete(item.id)
-                        showDeleteConfirm = false
-                    }
-                ) {
-                    Text("Delete", color = Color(0xFFEF4444))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancel", color = Color(0xFF94A3B8))
-                }
-            },
-            containerColor = Color(0xFF1E293B) // Dark Slate
-        )
-    }
-
+    // Modern White Card
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = 16.dp) // More spacing
-            .scale(scale)
-            .clickable { 
-                revealed = !revealed 
-                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-            },
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp), // Stronger shadow
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), // Use SurfaceVariant for cards
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp) // Executive Rounding
+            .clickable { revealed = !revealed },
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp), // Soft shadow
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Column(modifier = Modifier.padding(24.dp)) { // More internal breathing room
-            // Row 1: Header (Title, Username, Delete)
+        Column(modifier = Modifier.padding(20.dp)) {
+            // Header Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = item.title, 
-                        color = MaterialTheme.colorScheme.onSurface, 
-                        style = MaterialTheme.typography.titleLarge, // Bigger Header
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                    )
-                    // Username
-                    if (item.username.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Icon Placeholder (Circle)
+                    Surface(
+                        shape = RoundedCornerShape(50), // Changed to 50 for perfect circle
+                        color = BackgroundLight,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = item.title.take(1).uppercase(),
+                                color = BrandPurple,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
                         Text(
-                            text = item.username,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodyMedium
+                            text = item.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
                         )
+                        if (item.username.isNotEmpty()) {
+                            Text(
+                                text = item.username,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
+                            )
+                        }
                     }
                 }
                 
                 IconButton(onClick = { showDeleteConfirm = true }) {
-                     Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Filled.Delete,
+                    Icon(
+                        imageVector = Icons.Default.Delete,
                         contentDescription = "Delete",
-                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f) // Clearer red
+                        tint = TextSecondary.copy(alpha = 0.5f)
                     )
                 }
             }
             
             Spacer(modifier = Modifier.height(16.dp))
-            // Removed Divider for cleaner look
             
-            // Row 2: Password (Hidden/Revealed) + Copy + Timer
-            Row(
+            // Password Row
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.background.copy(alpha=0.5f), androidx.compose.foundation.shape.RoundedCornerShape(8.dp)) // Subtle background for password area
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .background(BackgroundLight, RoundedCornerShape(8.dp))
+                    .padding(12.dp)
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "PASSWORD",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary, // Brand Color Label
-                        letterSpacing = 1.sp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    androidx.compose.animation.Crossfade(targetState = revealed, label = "PasswordReveal") { isRevealed ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                     if (revealed) {
                         Text(
-                            text = if (isRevealed) item.password else "•••• •••• ••••",
-                            color = if (isRevealed) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha=0.3f), // High contrast when revealed
-                            style = if (isRevealed) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleLarge,
-                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace // Monospace for password
+                            text = item.password,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            color = TextPrimary
+                        )
+                    } else {
+                         Text(
+                            text = "••••••••••••",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = TextSecondary
                         )
                     }
-                }
-                
-                if (revealed) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "${ticks}s", 
-                            color = if (ticks < 10) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant, 
-                            style = MaterialTheme.typography.labelLarge,
-                            modifier = Modifier.padding(end = 12.dp)
-                        )
-                        FilledIconButton( // Prominent Copy Button
+                    
+                    if (revealed) {
+                        IconButton(
                             onClick = {
-                                clipboardManager.copyToClipboard("Secret", item.password) // Correct method
-                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                clipboardManager.setText(AnnotatedString(item.password))
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             },
                             colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                         ) {
