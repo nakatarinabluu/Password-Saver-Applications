@@ -208,6 +208,7 @@ fun SetupForm(
     var confirmPassword by remember { mutableStateOf("") }
     var recoveryInput by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var passwordMismatch by remember { mutableStateOf(false) } // Added state
     
     // State Observation
     val setupState by viewModel.setupState.collectAsState()
@@ -360,7 +361,7 @@ fun SetupForm(
                 value = confirmPassword,
                 onValueChange = { 
                     confirmPassword = it
-                    passwordMismatch = masterPassword != it
+                    passwordMismatch = password != it
                 },
                 label = { Text("Re-enter to Confirm", color = Color(0xFF94A3B8)) },
                 singleLine = true,
@@ -395,9 +396,9 @@ fun SetupForm(
             onClick = {
                 if (isRestore && recoveryInput.split("\\s+".toRegex()).size != 12) {
                      displayError = "Please enter exactly 12 words."
-                } else if (masterPassword.length < 6) {
+                } else if (password.length < 6) {
                     displayError = "Password must be at least 6 characters"
-                } else if (!isRestore && masterPassword != confirmPassword) {
+                } else if (!isRestore && password != confirmPassword) {
                     displayError = "Passwords do not match!"
                 } else {
                     // Start Verification Flow
