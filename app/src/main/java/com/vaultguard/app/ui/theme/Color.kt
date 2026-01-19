@@ -2,20 +2,27 @@ package com.vaultguard.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Azure Professional Palette (Deep Navy)
+// === Midnight Executive Palette ===
 
-// Backgrounds
-val DeepNavyBackground = Color(0xFF0A1929) // Very dark blue, almost black but warmer
-val DeepNavySurface = Color(0xFF132F4C)    // Lighter navy for cards/headers
+// Brand Identity
+val MidnightBlue = Color(0xFF04326E)      // Primary Brand Color (Deep, Professional)
+val RoyalBlue = Color(0xFF3B82F6)         // Accent / Action (Vibrant but serious)
+val SlateGray = Color(0xFF64748B)         // Secondary Text / Icons
 
-// Brand Colors (Matches Icon)
-val RoyalBlue = Color(0xFF04326E)         // Primary Brand Color (Icon Match)
-val KeyholeCyan = Color(0xFF29B6F6)       // Secondary Accent (Action)
-val SuccessGreen = Color(0xFF66BB6A)      // Subtle green for success
+// Dark Theme Surfaces
+val DarkBackground = Color(0xFF0F172A)    // Deep Slate (Not black, rich dark blue-grey)
+val DarkSurface = Color(0xFF1E293B)       // Lighter Slate (Cards, Bottom Sheets)
+val DarkTextPrimary = Color(0xFFF8FAFC)   // Off-White (High Legibility)
+val DarkTextSecondary = Color(0xFF94A3B8) // Muted Slate
+
+// Light Theme Surfaces (Swiss Style)
+val LightBackground = Color(0xFFF8FAFC)   // Very light grey/white
+val LightSurface = Color(0xFFFFFFFF)      // Pure White
+val LightTextPrimary = Color(0xFF0F172A)  // Deep Slate Text
+val LightTextSecondary = Color(0xFF475569) // Medium Slate
 
 // Functional
-val DangerRed = Color(0xFFEF5350)         // Softer red, not neon
+val DangerRed = Color(0xFFDC2626)         // Professional Red (Alerts)
+val SuccessGreen = Color(0xFF16A34A)      // Professional Green (Success)
+val WarningAmber = Color(0xFFD97706)      // Professional Amber (Warning)
 
-// Text
-val TextWhite = Color(0xFFFFFFFF)
-val TextGray = Color(0xFFB0BEC5)          // Blue-ish gray text

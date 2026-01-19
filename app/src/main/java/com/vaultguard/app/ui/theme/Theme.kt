@@ -17,39 +17,52 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = RoyalBlue,
-    secondary = KeyholeCyan,
-    tertiary = TextGray,
-    background = DeepNavyBackground,
-    surface = DeepNavySurface,
+    primary = MidnightBlue,       // Brand Identity
     onPrimary = Color.White,
-    onSecondary = Color.Black,
-    onBackground = TextWhite,
-    onSurface = TextWhite,
-    error = DangerRed
+    primaryContainer = RoyalBlue, // For FABs or Highlights
+    onPrimaryContainer = Color.White,
+    
+    secondary = SlateGray,
+    onSecondary = Color.White,
+    
+    background = DarkBackground,
+    onBackground = DarkTextPrimary,
+    
+    surface = DarkSurface,
+    onSurface = DarkTextPrimary,
+    surfaceVariant = DarkSurface, // For cards
+    onSurfaceVariant = DarkTextSecondary,
+    
+    error = DangerRed,
+    onError = Color.White
 )
 
-// We want to force Dark Theme or at least make Light Theme look similar (Strong)
-// But for now, let's define a "Light" that is just slightly lighter version of Strong matches
 private val LightColorScheme = lightColorScheme(
-    primary = RoyalBlue,
-    secondary = KeyholeCyan,
-    tertiary = TextGray,
-    background = Color(0xFFF5F5F7), // Keep the "Swiss" light for contrast if system is light?
-    // User asked for "Simple but Strong" - usually means Dark Mode. 
-    // Let's make "Light" theme also dark-ish or just respect system.
-    // Given the user liked the "Obsidian" vibe, let's stick to Dark defaults.
-    surface = Color.White,
+    primary = MidnightBlue,
     onPrimary = Color.White,
-    onBackground = Color.Black,
-    onSurface = Color.Black
+    primaryContainer = RoyalBlue,
+    onPrimaryContainer = Color.White,
+
+    secondary = SlateGray,
+    onSecondary = Color.White,
+
+    background = LightBackground,
+    onBackground = LightTextPrimary,
+
+    surface = LightSurface,
+    onSurface = LightTextPrimary,
+    surfaceVariant = Color(0xFFF1F5F9), // Slightly off-white for cards
+    onSurfaceVariant = LightTextSecondary,
+
+    error = DangerRed,
+    onError = Color.White
 )
 
 @Composable
 fun ZeroKeepTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = false, // DISABLE Dynamic Color to enforce OUR Brand
+    dynamicColor: Boolean = false, // DISABLE Dynamic Color to enforce OUR Executive Brand
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -58,23 +71,23 @@ fun ZeroKeepTheme(
         //     if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         // }
         darkTheme -> DarkColorScheme
-        else -> DarkColorScheme // FORCE DARK THEME for that "Strong" look everywhere? 
-        // User complained theme "inside apps is different". 
-        // Best way to unify is enforce ONE theme.
+        else -> LightColorScheme
     }
     
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.background.toArgb() // Match background
+            window.statusBarColor = colorScheme.background.toArgb()
+            // In Dark Mode, icons are light (so LightStatusBars = false)
+            // In Light Mode, icons are dark (so LightStatusBars = true)
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = androidx.compose.material3.Typography(),
+        typography = Typography, // Will update generic Typography next
         content = content
     )
 }

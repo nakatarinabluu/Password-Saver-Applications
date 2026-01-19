@@ -262,30 +262,31 @@ fun SecretItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp, horizontal = 16.dp)
+            .padding(vertical = 8.dp, horizontal = 16.dp) // More spacing
             .scale(scale)
             .clickable { 
                 revealed = !revealed 
                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
             },
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp), // Stronger shadow
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), // Use SurfaceVariant for cards
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp) // Executive Rounding
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(modifier = Modifier.padding(24.dp)) { // More internal breathing room
             // Row 1: Header (Title, Username, Delete)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = item.title, 
                         color = MaterialTheme.colorScheme.onSurface, 
-                        style = MaterialTheme.typography.titleMedium, 
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                        style = MaterialTheme.typography.titleLarge, // Bigger Header
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                     )
-                    // Username ALWAYS VISIBLE as requested
+                    // Username
                     if (item.username.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
@@ -300,58 +301,69 @@ fun SecretItem(
                      Icon(
                         imageVector = androidx.compose.material.icons.Icons.Filled.Delete,
                         contentDescription = "Delete",
-                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
+                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f) // Clearer red
                     )
                 }
             }
             
-            Spacer(modifier = Modifier.height(12.dp))
-            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha=0.5f))
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+            // Removed Divider for cleaner look
             
             // Row 2: Password (Hidden/Revealed) + Copy + Timer
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.background.copy(alpha=0.5f), androidx.compose.foundation.shape.RoundedCornerShape(8.dp)) // Subtle background for password area
+                    .padding(12.dp)
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Password",
+                        text = "PASSWORD",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        color = MaterialTheme.colorScheme.primary, // Brand Color Label
+                        letterSpacing = 1.sp
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     androidx.compose.animation.Crossfade(targetState = revealed, label = "PasswordReveal") { isRevealed ->
                         Text(
-                            text = if (isRevealed) item.password else "••••••••••••",
-                            color = if (isRevealed) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface.copy(alpha=0.5f), 
-                            style = if (isRevealed) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.titleLarge,
+                            text = if (isRevealed) item.password else "•••• •••• ••••",
+                            color = if (isRevealed) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha=0.3f), // High contrast when revealed
+                            style = if (isRevealed) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleLarge,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Monospace // Monospace for password
                         )
                     }
                 }
                 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (revealed) {
+                if (revealed) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = "${ticks}s", 
                             color = if (ticks < 10) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant, 
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(end = 8.dp)
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.padding(end = 12.dp)
                         )
-                        IconButton(onClick = {
-                            clipboardManager.copyToClipboard("Secret", item.password)
-                        }) {
+                        FilledIconButton( // Prominent Copy Button
+                            onClick = {
+                                clipboardManager.copyToClipboard("Secret", item.password)
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.ContextClick)
+                            },
+                            colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                        ) {
                             Icon(
                                 imageVector = androidx.compose.material.icons.Icons.Default.ContentCopy,
                                 contentDescription = "Copy Password",
-                                tint = MaterialTheme.colorScheme.secondary
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
-                    } else {
-                        // Show "Click to Reveal" hint icon or similar?
-                        // For now just empty or verify if user wants anything.
-                        // User said: "hidden word should only show password"
                     }
+                } else {
+                     Icon(
+                        imageVector = androidx.compose.material.icons.filled.Lock, // Lock icon when hidden
+                        contentDescription = "Locked",
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha=0.2f)
+                    )
                 }
             }
         }
