@@ -96,56 +96,7 @@ fun AuthScreen(
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.widthIn(max = 400.dp) // Constrain width on tablets
-        ) {
-            // Logo Area
-            Surface(
-                shape = androidx.compose.foundation.shape.CircleShape,
-                color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 12.dp,
-                modifier = Modifier.size(100.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    // Placeholder or actual resource
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_launcher_foreground), // Use existing resource
-                        contentDescription = null,
-                        tint = Color.Unspecified,
-                        modifier = Modifier.size(64.dp)
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Text(
-                text = if (isError) 
-                    stringResource(R.string.msg_attempts_remaining, 7 - attempts) 
-                else 
-                    stringResource(R.string.title_unlock), 
-                style = MaterialTheme.typography.headlineMedium,
-                color = if (attempts > 4) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground
-            )
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            VaultTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = stringResource(R.string.label_master_password),
-                isError = isError,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
-                    focusedBorderColor = if (attempts > 4) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                )
-            )
-            
-        }
+        // Column removed (it was duplicate)
         
         // Re-composition with Raw Field for Password specifics
         Column(
@@ -156,7 +107,7 @@ fun AuthScreen(
              // Logo Area
             Surface(
                 shape = androidx.compose.foundation.shape.CircleShape,
-                color = MaterialTheme.colorScheme.surface,
+                color = Color(0xFF1E293B), // Dark Slate Surface
                 shadowElevation = 12.dp,
                 modifier = Modifier.size(100.dp)
             ) {
@@ -178,7 +129,7 @@ fun AuthScreen(
                 else 
                     stringResource(R.string.title_unlock), 
                 style = MaterialTheme.typography.headlineSmall,
-                color = if (attempts > 4) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground
+                color = if (attempts > 4) Color(0xFFEF4444) else Color(0xFFF1F5F9) // Error Red or Off-White
             )
             
             Spacer(modifier = Modifier.height(32.dp))
@@ -186,19 +137,20 @@ fun AuthScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text(stringResource(R.string.label_master_password)) },
+                label = { Text(stringResource(R.string.label_master_password), color = Color(0xFF94A3B8)) }, // Slate-400 Label
                 visualTransformation = PasswordVisualTransformation(),
                 singleLine = true,
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                     autoCorrect = false,
-                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Password, // Corrected type
+                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
                     imeAction = androidx.compose.ui.text.input.ImeAction.Done
                 ),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
-                    focusedBorderColor = if (attempts > 4) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    focusedBorderColor = if (attempts > 4) Color(0xFFEF4444) else Color(0xFF3B82F6), // Red or Royal Blue
+                    unfocusedBorderColor = Color(0xFF475569), // Slate-600
+                    cursorColor = Color(0xFF3B82F6)
                 ),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -209,7 +161,7 @@ fun AuthScreen(
             VaultButton(
                 text = stringResource(R.string.btn_unlock),
                 onClick = { viewModel.attemptUnlock(password) },
-                containerColor = if (attempts > 4) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                containerColor = if (attempts > 4) Color(0xFFEF4444) else Color(0xFF3B82F6)
             )
             
             if (viewModel.isBiometricEnabled) {
@@ -219,9 +171,9 @@ fun AuthScreen(
                     modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
-                        painter = painterResource(android.R.drawable.ic_lock_idle_lock), // Stock lock icon as fallback or specific bio icon
+                        painter = painterResource(android.R.drawable.ic_lock_idle_lock), 
                         contentDescription = "Biometrics",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = Color(0xFF3B82F6)
                     )
                 }
             }
@@ -231,14 +183,14 @@ fun AuthScreen(
             // Reset / Switch Account Logic
             var showResetConfirm by remember { mutableStateOf(false) }
             TextButton(onClick = { showResetConfirm = true }) {
-                Text("Switch Account / Reset Wallet", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.7f), style = MaterialTheme.typography.bodySmall)
+                Text("Switch Account / Reset Wallet", color = Color(0xFF94A3B8), style = MaterialTheme.typography.bodySmall)
             }
 
             if (showResetConfirm) {
                 AlertDialog(
                     onDismissRequest = { showResetConfirm = false },
-                    title = { Text("Reset Wallet?") },
-                    text = { Text("This will remove the current account from this device. You can Restore it later using your Recovery Phrase. Proceed?", color = MaterialTheme.colorScheme.onSurface) },
+                    title = { Text("Reset Wallet?", color = Color.White) }, // White Title
+                    text = { Text("This will remove the current account from this device. You can Restore it later using your Recovery Phrase. Proceed?", color = Color(0xFFE2E8F0)) }, // Light Body
                     confirmButton = {
                         TextButton(
                             onClick = {
@@ -246,15 +198,15 @@ fun AuthScreen(
                                 onReset() 
                             }
                         ) {
-                            Text("Reset", color = MaterialTheme.colorScheme.error)
+                            Text("Reset", color = Color(0xFFEF4444))
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { showResetConfirm = false }) {
-                            Text("Cancel")
+                            Text("Cancel", color = Color(0xFF94A3B8))
                         }
                     },
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = Color(0xFF1E293B) // Dark Surface
                 )
             }
         }
