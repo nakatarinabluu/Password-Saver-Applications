@@ -46,7 +46,7 @@ class SetupViewModel @Inject constructor(
                 val derivedKey = javax.crypto.spec.SecretKeySpec(keyBytes, "AES")
                 
                 // 2. Strict Verification (If Restoring)
-                val vaultId = sha256(mnemonicString) // Compute early
+                val vaultId = com.vaultguard.app.security.SecurityUtils.sha256(mnemonicString) // Compute early
                 if (isRestore) {
                     if (!verifyKeyAgainstServer(derivedKey, vaultId)) {
                         _setupState.value = SetupState.Error("Incorrect Password or Recovery Phrase. Unable to unlock vault.")
@@ -89,8 +89,8 @@ class SetupViewModel @Inject constructor(
                     // Try decrypting the first one
                     val sample = secrets.first()
                     try {
-                        val iv = hexStringToByteArray(sample.iv)
-                        val encrypted = hexStringToByteArray(sample.encryptedBlob)
+                        val iv = com.vaultguard.app.security.SecurityUtils.hexStringToByteArray(sample.iv)
+                        val encrypted = com.vaultguard.app.security.SecurityUtils.hexStringToByteArray(sample.encryptedBlob)
                         
                         // If this throws or returns garbage, decryption failed.
                         securityManager.decrypt(iv, encrypted, key)
@@ -114,22 +114,8 @@ class SetupViewModel @Inject constructor(
         _setupState.value = SetupState.Idle
     }
     
-    // --- Utils (Duplicated from SecretViewModel - should actly be in a shared util) ---
-    private fun sha256(input: String): String {
-        val bytes = java.security.MessageDigest.getInstance("SHA-256").digest(input.toByteArray())
-        return bytes.joinToString("") { "%02x".format(it) }
-    }
-    
-    private fun hexStringToByteArray(s: String): ByteArray {
-        val len = s.length
-        val data = ByteArray(len / 2)
-        var i = 0
-        while (i < len) {
-            data[i / 2] = ((Character.digit(s[i], 16) shl 4) + Character.digit(s[i + 1], 16)).toByte()
-            i += 2
-        }
-        return data
-    }
+    // --- Utils ---
+    // Moved to SecurityUtils to prevent duplication.
 }
 
 sealed class SetupState {

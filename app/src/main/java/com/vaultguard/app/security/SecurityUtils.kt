@@ -82,4 +82,22 @@ object SecurityUtils {
                 || Build.PRODUCT.contains("emulator")
                 || Build.PRODUCT.contains("simulator")
     }
+
+    // --- Crypto Primitives (Centralized) ---
+
+    fun sha256(input: String): String {
+        val bytes = java.security.MessageDigest.getInstance("SHA-256").digest(input.toByteArray())
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    fun hexStringToByteArray(s: String): ByteArray {
+        val len = s.length
+        val data = ByteArray(len / 2)
+        var i = 0
+        while (i < len) {
+            data[i / 2] = ((Character.digit(s[i], 16) shl 4) + Character.digit(s[i + 1], 16)).toByte()
+            i += 2
+        }
+        return data
+    }
 }

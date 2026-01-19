@@ -40,9 +40,9 @@ class SecretViewModel @Inject constructor(
             // Dynamic Vault Identity
             val ownerHash = prefs.getString("vault_id", null) ?: run {
                 // Fallback for legacy "default_user" or just fail?
-                // For migration: Check if "vault_id" missing, maybe use sha256("default_user")?
-                // Better: sha256("default_user") so existing installs don't break immediately.
-                sha256("default_user") 
+                // For migration: Check if "vault_id" missing, maybe use com.vaultguard.app.security.SecurityUtils.sha256("default_user")?
+                // Better: com.vaultguard.app.security.SecurityUtils.sha256("default_user") so existing installs don't break immediately.
+                com.vaultguard.app.security.SecurityUtils.sha256("default_user") 
             }
             
             try {
@@ -59,7 +59,7 @@ class SecretViewModel @Inject constructor(
                 result.onSuccess { responseList ->
                     // Auto-Migration: If current vault is empty, check legacy "default_user" vault
                     if (responseList.isEmpty()) {
-                        val legacyHash = sha256("default_user")
+                        val legacyHash = com.vaultguard.app.security.SecurityUtils.sha256("default_user")
                         // Only check if we are NOT already in the legacy vault
                         if (ownerHash != legacyHash) {
                              val legacyResult = repository.fetchSecrets(legacyHash)
@@ -75,8 +75,8 @@ class SecretViewModel @Inject constructor(
 
                     val decryptedList = responseList.mapNotNull { secret ->
                         try {
-                            val iv = hexStringToByteArray(secret.iv)
-                            val encrypted = hexStringToByteArray(secret.encryptedBlob)
+                            val iv = com.vaultguard.app.security.SecurityUtils.hexStringToByteArray(secret.iv)
+                            val encrypted = com.vaultguard.app.security.SecurityUtils.hexStringToByteArray(secret.encryptedBlob)
                             
                             // Decrypt using loaded key
                             val decryptedBytes = securityManager.decrypt(iv, encrypted, masterKey)
@@ -152,8 +152,8 @@ class SecretViewModel @Inject constructor(
                 val encryptedBlob = encryptedBytes.joinToString("") { "%02x".format(it) }
                 
                 // FIX: ownerHash must be consistent for the App User
-                val ownerHash = prefs.getString("vault_id", null) ?: sha256("default_user")
-                val titleHash = sha256(title)
+                val ownerHash = prefs.getString("vault_id", null) ?: com.vaultguard.app.security.SecurityUtils.sha256("default_user")
+                val titleHash = com.vaultguard.app.security.SecurityUtils.sha256(title)
 
                 val result = repository.saveSecret(id, ownerHash, titleHash, encryptedBlob, iv)
                 _saveState.value = result
@@ -222,28 +222,14 @@ class SecretViewModel @Inject constructor(
 
     // ... wipeVault ...
     // --- Helpers ---
-    private fun sha256(input: String): String {
-        val bytes = java.security.MessageDigest.getInstance("SHA-256").digest(input.toByteArray())
-        return bytes.joinToString("") { "%02x".format(it) }
-    }
 
-    private fun hexStringToByteArray(s: String): ByteArray {
-        val len = s.length
-        val data = ByteArray(len / 2)
-        var i = 0
-        while (i < len) {
-            data[i / 2] = ((Character.digit(s[i], 16) shl 4) + Character.digit(s[i + 1], 16)).toByte()
-            i += 2
-        }
-        return data
-    }
     private fun migrateLegacyData(legacyList: List<com.vaultguard.app.data.remote.dto.SecretResponse>, masterKey: javax.crypto.SecretKey, newOwnerHash: String) {
         viewModelScope.launch {
             var migratedCount = 0
             legacyList.forEach { secret ->
                 try {
-                    val iv = hexStringToByteArray(secret.iv)
-                    val encrypted = hexStringToByteArray(secret.encryptedBlob)
+                    val iv = com.vaultguard.app.security.SecurityUtils.hexStringToByteArray(secret.iv)
+                    val encrypted = com.vaultguard.app.security.SecurityUtils.hexStringToByteArray(secret.encryptedBlob)
                     
                     // 1. Try Decrypt
                     val decryptedBytes = securityManager.decrypt(iv, encrypted, masterKey)
