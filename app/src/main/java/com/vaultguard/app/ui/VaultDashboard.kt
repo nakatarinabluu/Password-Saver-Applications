@@ -362,7 +362,7 @@ fun SecretItem(
                     }
                 } else {
                      Icon(
-                        imageVector = androidx.compose.material.icons.Filled.Lock, // Correct reference with import
+                        imageVector = androidx.compose.material.icons.Icons.Default.Lock, // Standard reference
                         contentDescription = "Locked",
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha=0.2f)
                     )
